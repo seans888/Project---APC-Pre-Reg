@@ -1,0 +1,76 @@
+@media print
+{    
+    .no-print, .no-print *
+    {
+        display: none !important;
+    }
+}
+
+body {
+	font-family: sans, verdana;
+	font-size: 12px;
+	margin-right: 0px;
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-bottom: 0px;
+}
+.bold {
+    font-weight: bold;
+}
+.head1 {
+	font-size: 16px;
+	font-family: sans, verdana, Arial, Helvetica, sans-serif;
+}
+.head2 {
+	font-size: 14px;
+	font-family: sans, verdana, Arial, Helvetica, sans-serif;
+}
+
+.listHeader {
+	text-transform: capitalize;
+	font-size: 12px;
+	font-weight: bold;
+	color: #000000;
+	font-family : sans, verdana;
+	padding: 4px;
+}
+.listText {
+	font-family: sans, verdana, Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	color: #000000;
+	background-color: #F6F6F6;
+}
+.listTextAlt {
+	font-family: sans, verdana, Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	color: #000000;
+	background-color: #FFFFFF;
+}
+.listHeaderCell {
+	padding: 4px;
+}
+.listCell {
+	padding-top: 2px;
+	padding-bottom: 2px;
+	padding-left: 4px;
+	padding-right: 1px;
+}
+.pageHeader {
+    font-family : sans, verdana,arial ;
+    font-weight : bold;
+    color : #0000ff;
+    font-size : 18px;
+   	text-transform: capitalize;
+}
+.pageHeaderAlt {
+    font-family : sans, verdana,arial ;
+    font-weight : bold;
+    color : #ff0000;
+    font-size : 14px;
+}
+table {
+	font-family: sans, verdana;
+	font-size: 12px;
+    border-collapse: collapse;
+    empty-cells: show;
+}

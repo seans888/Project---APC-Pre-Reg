@@ -1,0 +1,565 @@
+/* Summer Rain skin created for Cobalt on March 2014 by KSR */
+
+.HeaderBanner {
+    background-color: #0f587d;
+/* Title */
+    color: #f0ece8;
+}
+
+/* Subtitle */
+.HeaderBanner span {
+    color: #f0ece8;
+}
+
+/* Top Navigation */
+.HeaderMenu {
+    background-color: #0f587d;
+}
+
+.Footer {
+    background-color: #8a837e;
+}
+
+a:link {
+    color: #188893;
+}
+a:visited {
+    color: #188893;
+}
+a:hover {
+    color: #188893;
+}
+a:active {
+    color: #188893;
+}
+
+a.footer:link {
+    color : #0f394f;
+}
+a.footer:visited {
+    color : #0f394f;
+}
+a.footer:hover {
+    color : #0f394f;
+}
+a.footer:active {
+    color : #0f394f;
+}
+
+/* Top Navigation */
+a.menu:link {
+    color : #dfe3e6;
+}
+a.menu:visited {
+    color : #dfe3e6;
+}
+a.menu:hover {
+    color : #dfe3e6;
+}
+a.menu:active {
+    color : #dfe3e6;
+}
+
+/* Control Center */
+a.linkCC:link {
+    color: #0f394f;
+}
+a.linkCC:visited {
+    color: #0f394f;
+}
+a.linkCC:hover {
+    color: #0f394f;
+    background-color: #e3cc56;
+}
+a.linkCC:active {
+    color: #0f394f;
+}
+
+/* List View */
+a.listRowEven:link {
+    color: #0f394f;
+}
+a.listRowEven:visited {
+    color: #0f394f;
+}
+a.listRowEven:hover {
+    color: #0f394f;
+}
+a.listRowEven:active {
+    color: #0f394f;
+}
+
+/* Sort arrows */
+a.listRowHead:link {
+    color: #000000;
+}
+a.listRowHead:visited {
+    color: #000000;
+}
+a.listRowHead:hover {
+    color: #000000;
+}
+a.listRowHead:active {
+    color: #000000;
+}
+
+/* List View */
+a.listRowOdd:link {
+    color: #0f394f;
+}
+a.listRowOdd:visited {
+    color: #0f394f;
+}
+a.listRowOdd:hover {
+    color: #0f394f;
+}
+a.listRowOdd:active {
+    color: #0f394f;
+}
+
+/* 'Add new record' etc. */
+a.listview:link {
+    color: #f7d128;
+}
+a.listview:visited {
+    color: #f7d128;
+}
+a.listview:hover {
+    color: #f7d128;
+}
+a.listview:active {
+    color: #f7d128;
+}
+
+/* Side Navigation */
+a.sidebar {
+    color: #0f394f;
+}
+
+a.sidebar:hover {
+    color: #0f394f;
+}
+
+body {
+    background-color: #959aab;
+}
+
+div.container {
+
+}
+
+div.container_footer {
+
+}
+
+div.container_icons_CC {
+
+}
+
+div.file_upload {
+    background-color: #f8f8e6;
+    border-color: #aaaaaa;
+    color: #000000;
+    box-shadow: 0 1px 2px #ddd;
+    -moz-box-shadow: 0 1px 2px #ddd;
+    -webkit-box-shadow: 0 1px 2px #ddd;
+}
+
+fieldset {
+    background-color: #f0ece8;
+}
+
+/* Container around the windows (visible in Cobalt Default) */
+fieldset.container {
+    background-color: #959aab;
+    border-color: #959aab;
+}
+
+/* Container around A/E/D/V window */
+fieldset.container_invisible {
+    background-color: #959aab;
+}
+
+/* Head of Control Center and A/E/D/V windows */
+fieldset.top {
+    background-color: #0f587d;
+    border-color: #0f587d;
+    color: #f0ece8;
+}
+
+/* Body of Control Center and A/E/D/V windows */
+fieldset.middle {
+    background-color: #f0ece8;
+    border-color: #f0ece8;
+}
+
+/* Foot of A/E/D/V window */
+fieldset.bottom {
+    background-color: #8a837e;
+    border-color: #8a837e;
+    color: #0f394f;
+}
+
+fieldset.middle_top {
+    background-color: #f0ece8;
+    border-color: #f0ece8;
+}
+
+fieldset.fieldset_group {
+
+}
+
+/* Fieldset (if any) Label in A/E/D/V */
+fieldset legend {
+    background-color: #f0ece8;
+    border-color: #959aab;
+}
+
+img {
+
+}
+
+input {
+
+}
+
+input[type=button] {
+    background-color: #e3cc56;
+    color: #0f394f;
+}
+input[type=button]:hover {
+    background-color: #0f394f;
+    color: #f0ece8;
+}
+input[type=button]:active {
+
+}
+input[type=button]:focus {
+    background-color: #0f394f;
+    color: #f0ece8;
+}
+
+input[type=checkbox] {
+
+}
+input[type=checkbox]:focus {
+
+}
+
+input[type=file] {
+
+}
+input[type=file]:focus {
+    outline: #3399ff solid 1px;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+input[type=password] {
+    background-color: #f0f0f0;
+    border-color: #aaaaaa;
+    color: #000000;
+    box-shadow: 0 1px 2px #dddddd;
+    -moz-box-shadow: 0 1px 2px #dddddd;
+    -webkit-box-shadow: 0 1px 2px #dddddd;
+}
+input[type=password]:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+input[type=radio] {
+    border-color: #aaaaaa;
+    box-shadow: 0 1px 2px #dddddd;
+    -moz-box-shadow: 0 1px 2px #dddddd;
+    -webkit-box-shadow: 0 1px 2px #dddddd;
+}
+input[type=radio]:focus {
+    outline: #3399ff solid 1px;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+input[type=submit] {
+    background-color: #e3cc56;
+    color: #0f394f;
+}
+input[type=submit]:hover {
+    background-color: #0f394f;
+    color: #f0ece8;
+}
+input[type=submit]:active {
+
+}
+input[type=submit]:focus {
+    background-color: #0f394f;
+    color: #f0ece8;
+}
+input[type=submit].cancel:hover {
+
+}
+input[type=submit].submit:hover {
+
+}
+
+input[type=text] {
+    background-color: #f8f8e6;
+    border-color: #aaaaaa;
+    color: #000000;
+    box-shadow: 0 1px 2px #ddd;
+    -moz-box-shadow: 0 1px 2px #ddd;
+    -webkit-box-shadow: 0 1px 2px #ddd;
+}
+input[type=text]:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+ol.normal {
+
+}
+
+option {
+
+}
+
+.label {
+
+}
+
+.messageError {
+    background-color: #cc3333;
+    color: #ffffff;
+    -moz-box-shadow: 5px 5px 2px #505050;
+    -webkit-box-shadow: 5px 5px 2px #505050;
+    box-shadow: 5px 5px 2px #505050;
+}
+.messageError a:link {
+    color: #0000ff;
+}
+.messageError a:visited {
+    color: #0000ff;
+}
+.messageError a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageError a:active {
+    color: #0000ff;
+}
+
+.messageInfo {
+    background-color: #76aadb;
+    color: #000000;
+    -moz-box-shadow: 5px 5px 2px #505050;
+    -webkit-box-shadow: 5px 5px 2px #505050;
+    box-shadow: 5px 5px 2px #505050;
+}
+.messageInfo a:link {
+    color: #0000ff;
+}
+.messageInfo a:visited {
+    color: #0000ff;
+}
+.messageInfo a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageInfo a:active {
+    color: #0000ff;
+}
+
+.messageSystem {
+    background-color: #66cc66;
+    color: #000000;
+    -moz-box-shadow: 5px 5px 2px #505050;
+    -webkit-box-shadow: 5px 5px 2px #505050;
+    box-shadow: 5px 5px 2px #505050;
+}
+.messageSystem a:link {
+    color: #0000ff;
+}
+.messageSystem a:visited {
+    color: #0000ff;
+}
+.messageSystem a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageSystem a:active {
+    color: #0000ff;
+}
+
+.messageTip {
+    background-color: #fffacc;
+    color: #000000;
+    -moz-box-shadow: 5px 5px 2px #505050;
+    -webkit-box-shadow: 5px 5px 2px #505050;
+    box-shadow: 5px 5px 2px #505050;
+}
+.messageTip a:link {
+    color: #0000ff;
+}
+.messageTip a:visited {
+    color: #0000ff;
+}
+.messageTip a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageTip a:active {
+    color: #0000ff;
+}
+
+/* Heading */
+.pageHeaderText {
+    color: #f0ece8;
+}
+
+.pageHeaderDiv {
+
+}
+
+p.detail_view {
+
+}
+
+p.multifield_detail_view {
+
+}
+
+p.multifield_detail_view_label {
+
+}
+
+select {
+    background-color: #f8f8e6;
+    border-color: #aaaaaa;
+    color: #000000;
+}
+select:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+table {
+
+}
+
+table.input_form td {
+
+}
+
+table.listView {
+
+}
+
+/* Side Navigation and List View table body cells */
+table.listView td {
+    border-color: #959aab;
+}
+
+/* Side Navigation and List View table head cells */
+table.listView tr[class=listRowHead] td {
+    background-color: #1eabb8;
+    border-top-color: #959aab;
+}
+
+td {
+
+}
+
+/* Top Navigation */
+td.menu {
+
+}
+
+td.menu:hover {
+    background-color: #0f394f;
+}
+
+td.oper_col {
+
+}
+
+/* Module Control, Set User Passports, & List View.cells */
+td.listCell:hover {
+    background-color: #e3cc56;
+}
+
+tr.listRowEven {
+    background-color: #dfe3e6;
+}
+tr.listRowEven:hover {
+    background-color: #e3cc56;
+}
+
+/* Module Control and Set User Passports.rows */
+tr.listRowEvenNoHighlight {
+    background-color: #fefefe;
+}
+
+/* Side Navigation and List View table head row */
+tr.listRowHead {
+
+}
+
+tr.listRowOdd {
+    background-color: #f0ece8;
+}
+tr.listRowOdd:hover {
+    background-color: #e3cc56;
+}
+
+/* Module Control and Set User Passports.rows */
+tr.listRowOddNoHighlight {
+    background-color: #eeeeee;
+}
+
+/* Filter + Page # in List View */
+tr.listViewBar {
+    background-color: #0f587d;
+    color: #dce0e3;
+}
+
+/* 'You are logged in as' in Top Navigation */
+.text-normal {
+    color: #dfe3e6;
+}
+
+/* Username in Top Navigation */
+.text-info {
+    color: #ff0000;
+}
+
+textarea {
+    background-color: #f8f8e6;
+    border-color: #aaaaaa;
+    color: #000000;
+    box-shadow: 0 1px 2px #dddddd;
+    -moz-box-shadow: 0 1px 2px #dddddd;
+    -webkit-box-shadow: 0 1px 2px #dddddd;
+}
+textarea:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+.throbber {
+
+
+}
+
+.throbber_screen_locker {
+    background-color: rgba(255, 255, 255, .6);
+}

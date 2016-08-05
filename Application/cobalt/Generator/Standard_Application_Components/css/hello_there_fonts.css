@@ -1,0 +1,486 @@
+/* Hello There skin created for Cobalt on March 2014 by KSR */
+
+@font-face {
+    font-family: 'Display Font';
+    src: url('fonts/FiraSansOT-Regular.otf');
+}
+
+@font-face {
+    font-family: 'Input Font';
+    src: url('fonts/SourceCodePro-Regular.otf');
+}
+
+.HeaderBanner {
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.HeaderBanner span {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.HeaderMenu {
+    font-size: 14px;
+}
+
+.Footer {
+    font-size: 10px;
+}
+
+a:link {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a:visited {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a:hover {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a:active {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+
+a.footer:link {
+    font-size: 10px;
+    font-weight: bold;
+}
+a.footer:visited {
+    font-size: 10px;
+    font-weight: bold;
+}
+a.footer:hover {
+    font-size: 10px;
+    font-weight: bold;
+}
+a.footer:active {
+    font-size: 10px;
+    font-weight: bold;
+}
+
+a.menu:link {
+    font-weight: bold;
+}
+a.menu:visited {
+    font-weight: bold;
+}
+a.menu:hover {
+    font-weight: bold;
+}
+a.menu:active {
+    font-weight: bold;
+}
+
+a.linkCC:link {
+
+}
+a.linkCC:visited {
+
+}
+a.linkCC:hover {
+
+}
+a.linkCC:active {
+
+}
+
+a.listRowEven:link {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowEven:visited {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowEven:hover {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowEven:active {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+
+a.listRowHead:link {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowHead:visited {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowHead:hover {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowHead:active {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+
+a.listRowOdd:link {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowOdd:visited {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowOdd:hover {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listRowOdd:active {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+
+a.listview:link {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listview:visited {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listview:hover {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+a.listview:active {
+    font-size: 14px;
+    font-family: "Display Font";
+}
+
+a.sidebar {
+
+}
+
+body {
+    font-family: "Display Font";
+    font-size: 14px;
+}
+
+div.container {
+
+}
+
+div.container_footer {
+
+}
+
+div.container_icons_CC {
+
+}
+
+div.file_upload {
+
+}
+
+fieldset {
+
+}
+
+fieldset.container {
+
+}
+
+fieldset.container_invisible {
+
+}
+
+fieldset.top {
+    font-size: 18px;
+}
+
+fieldset.middle {
+
+}
+
+fieldset.bottom {
+
+}
+
+fieldset.middle_top {
+
+}
+
+fieldset.fieldset_group {
+
+}
+
+fieldset legend {
+    font-family: "Display Font";
+    font-weight: bold;
+}
+
+img {
+
+}
+
+input {
+    font-size : 14px;
+    font-family: "Input Font";
+}
+
+input[type=button] {
+    font-weight: bold;
+}
+input[type=button]:hover {
+
+}
+input[type=button]:active {
+
+}
+input[type=button]:focus {
+
+}
+
+input[type=checkbox] {
+
+}
+input[type=checkbox]:focus {
+
+}
+
+input[type=file] {
+
+}
+input[type=file]:focus {
+
+}
+
+input[type=password] {
+
+}
+input[type=password]:focus {
+
+}
+
+input[type=radio] {
+
+}
+input[type=radio]:focus {
+
+}
+
+input[type=submit] {
+    font-weight: bold;
+}
+input[type=submit]:hover {
+
+}
+input[type=submit]:active {
+
+}
+input[type=submit]:focus {
+
+}
+input[type=submit].cancel:hover {
+
+}
+input[type=submit].submit:hover {
+
+}
+
+input[type=text] {
+
+}
+input[type=text]:focus {
+
+}
+
+ol.normal {
+
+}
+
+option {
+
+}
+
+.label {
+
+}
+
+.messageError {
+    font-size: 16px;
+}
+.messageError a:link {
+
+}
+.messageError a:visited {
+
+}
+.messageError a:hover {
+
+}
+.messageError a:active {
+
+}
+
+.messageInfo {
+    font-size: 16px;
+}
+.messageInfo a:link {
+
+}
+.messageInfo a:visited {
+
+}
+.messageInfo a:hover {
+
+}
+.messageInfo a:active {
+
+}
+
+.messageSystem {
+    font-size: 16px;
+}
+.messageSystem a:link {
+
+}
+.messageSystem a:visited {
+
+}
+.messageSystem a:hover {
+
+}
+.messageSystem a:active {
+
+}
+
+.messageTip {
+    font-size: 16px;
+}
+.messageTip a:link {
+
+}
+.messageTip a:visited {
+
+}
+.messageTip a:hover {
+
+}
+.messageTip a:active {
+
+}
+
+.pageHeaderText {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.pageHeaderDiv {
+
+}
+
+p.detail_view {
+
+}
+
+p.multifield_detail_view {
+
+}
+
+p.multifield_detail_view_label {
+
+}
+
+select {
+    font-size: 14px;
+    font-family: "Input Font";
+}
+select:focus {
+
+}
+
+table {
+
+}
+
+table.input_form td {
+
+}
+
+table.listView {
+
+}
+
+table.listView td {
+
+}
+
+table.listView tr[class=listRowHead] td {
+
+}
+
+td {
+
+}
+
+td.menu {
+
+}
+
+td.menu:hover {
+
+}
+
+td.oper_col {
+
+}
+
+td.listCell:hover {
+
+}
+
+tr.listRowEven {
+
+}
+tr.listRowEven:hover {
+
+}
+
+tr.listRowEvenNoHighlight {
+
+}
+
+tr.listRowHead {
+    font-weight: bold;
+}
+
+tr.listRowOdd {
+
+}
+tr.listRowOdd:hover {
+
+}
+
+tr.listRowOddNoHighlight {
+
+}
+
+tr.listViewBar {
+
+}
+
+.text-normal {
+
+}
+
+.text-info {
+    font-weight: bold;
+}
+
+textarea {
+    font-size: 14px;
+    font-family: "Input Font";
+}
+textarea:focus {
+
+}
