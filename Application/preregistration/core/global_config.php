@@ -1,6 +1,6 @@
 <?php
-define('GLOBAL_PROJECT_NAME', 'Asia Pacific College Online Pre-registration');
-define('GLOBAL_SESSION_NAME', 'C6c1c4040');
+define('GLOBAL_PROJECT_NAME', 'APC Pre-registration');
+define('GLOBAL_SESSION_NAME', 'Cd4209fd8');
 
 //Default database settings
 define('DEFAULT_DB_HOST','localhost');
@@ -15,7 +15,7 @@ define('GRAPH_CREATOR_FONTDIR', FULLPATH_CORE . 'fonts/');
 define('LOGIN_PAGE', '/' . BASE_DIRECTORY . '/login.php');
 define('HOME_PAGE', '/' . BASE_DIRECTORY . '/main.php');
 define('INDEX_TARGET', '/' . BASE_DIRECTORY . '/start.php');
-define('TMP_DIRECTORY', 'C:\Users\student\Documents\Project---APC-Pre-Reg\Application' . '/' . BASE_DIRECTORY . '/tmp');
+define('TMP_DIRECTORY', 'C:\Project---APC-Pre-Reg\Application' . '/' . BASE_DIRECTORY . '/tmp');
 define('TMP_PDF_STORE', 'rpt_pdf_tmp');
 define('TMP_CSV_STORE', 'rpt_csv_tmp');
 define('THIRD_PARTY_DIR', '/' . BASE_DIRECTORY . '/core/thirdparty/');

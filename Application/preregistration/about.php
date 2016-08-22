@@ -12,7 +12,7 @@ $html = new html;
 $html->draw_header('About ' . GLOBAL_PROJECT_NAME, $message, $message_type);
 $project_name = GLOBAL_PROJECT_NAME;
 $msg=<<<EOD
-An automated pre-registration system for students to use in order to add subjects for the next term.
+Online Pre-registration system for APC
 <br /><br /><b> $project_name is powered by Cobalt</b>
 EOD;
 $html->display_info($msg);

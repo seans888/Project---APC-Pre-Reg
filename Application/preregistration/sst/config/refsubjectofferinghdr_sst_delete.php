@@ -1,6 +1,6 @@
 <?php
 $config = array(
-                ['location'=>'modules/tables/delete_refsubjectofferinghdr.php',
+                ['location'=>'modules/modules/delete_refsubjectofferinghdr.php',
                 'pre'=>'refsubjectofferinghdr_sst_delete.php',
                 'post'=>''],
                );

@@ -1,6 +1,6 @@
 <?php
 $config = array(
-                ['location'=>'modules/tables/add_xrefstudentcourse.php',
+                ['location'=>'modules/modules/add_xrefstudentcourse.php',
                 'pre'=>'xrefstudentcourse_sst_add.php',
                 'post'=>''],
                );

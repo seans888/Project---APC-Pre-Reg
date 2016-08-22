@@ -1,6 +1,6 @@
 <?php
 $config = array(
-                ['location'=>'modules/tables/detailview_refsubjectofferinghdr.php',
+                ['location'=>'modules/modules/detailview_refsubjectofferinghdr.php',
                 'pre'=>'refsubjectofferinghdr_sst_detailview.php',
                 'post'=>''],
                );

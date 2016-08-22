@@ -1,6 +1,6 @@
 <?php
 $config = array(
-                ['location'=>'modules/tables/delete_course.php',
+                ['location'=>'modules/modules/delete_course.php',
                 'pre'=>'course_sst_delete.php',
                 'post'=>''],
                );

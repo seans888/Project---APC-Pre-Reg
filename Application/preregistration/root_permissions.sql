@@ -26,8 +26,4 @@ INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '61');
 INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '62');
 INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '63');
 INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '64');
-INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '65');
-INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '66');
-INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '67');
-INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES ('1', '68');
 INSERT `user_passport` SELECT 'root', `link_id` FROM user_role_links WHERE role_id='1'

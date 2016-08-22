@@ -1,6 +1,6 @@
 <?php
 $config = array(
-                ['location'=>'modules/tables/add_course.php',
+                ['location'=>'modules/modules/add_course.php',
                 'pre'=>'course_sst_add.php',
                 'post'=>''],
                );
