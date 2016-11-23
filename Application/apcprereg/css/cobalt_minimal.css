@@ -1,0 +1,648 @@
+* {
+    padding: 0;
+    margin:  0;
+}
+
+.HeaderBanner {
+    padding-left: 30px;
+    border: none;
+    height: 85px;
+    line-height: 85px;
+    background-color: #0e90fe;
+    color: #ffffff;
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.HeaderBanner span {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.HeaderMenu {
+    border: none;
+    height: 35px;
+    line-height: 35px;
+    background-color: #eeeeee;
+}
+
+.Footer {
+    padding: 20px;
+    margin-top: 50px;
+    margin-bottom: 10px;
+    margin-right: auto;
+    margin-left: auto;
+    text-align: left;
+    color: #dfdfdf;
+    background-color: #424242;
+    font-size: 10px;
+}
+
+a:link {
+    color: #0000ff;
+    text-decoration:none;
+}
+a:visited {
+    color: #0000ff;
+    text-decoration:none;
+}
+a:hover {
+    color: #0000ff;
+    text-decoration: underline;
+}
+a:active {
+    color: #0000ff;
+    text-decoration: underline;
+}
+
+a.footer {
+    color: #0000ff;
+    text-decoration : none;
+    display: block;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+a.menu:link {
+    color : #0066aa;
+    text-decoration : none;
+    display: block;
+    font-weight: bold;
+}
+a.menu:visited {
+    color : #0066aa;
+    text-decoration : none;
+    display: block;
+    font-weight: bold;
+}
+a.menu:hover {
+    color : #0066aa;
+    text-decoration : underline;
+    display: block;
+    font-weight: bold;
+}
+a.menu:active {
+    color : #0066aa;
+    text-decoration : underline;
+    display: block;
+    font-weight: bold;
+}
+
+a.linkCC:link {
+    display: block;
+    padding: 4px;
+    padding-bottom: 10px;
+    text-decoration:none;
+    color: #0066aa;
+    border-color: #eeeeee;
+}
+a.linkCC:visited {
+    display: block;
+    padding: 4px;
+    padding-bottom: 10px;
+    text-decoration:none;
+    color: #0066aa;
+    border-color: #eeeeee;
+}
+a.linkCC:hover {
+    display: block;
+    padding: 4px;
+    padding-bottom: 10px;
+    text-decoration:underline;
+    color: #0066aa;
+    border-color: #eeeeee;
+}
+a.linkCC:active {
+    display: block;
+    padding: 4px;
+    padding-bottom: 10px;
+    text-decoration:none;
+    color: #0066aa;
+    border-color: #eeeeee;
+}
+
+a.listRowEven:link {
+    color: #0000ff;
+    text-decoration:none;
+}
+a.listRowEven:visited {
+    color: #0000ff;
+    text-decoration:none;
+}
+a.listRowEven:hover {
+    color: #0000ff;
+    text-decoration:underline;
+}
+a.listRowEven:active {
+    color: #0000ff;
+    text-decoration:none;
+}
+
+a.listRowHead:link {
+    color: #000000;
+    text-decoration:none;
+}
+a.listRowHead:visited {
+    color: #000000;
+    text-decoration:none;
+}
+a.listRowHead:hover {
+    color: #0000ff;
+    text-decoration:underline;
+}
+a.listRowHead:active {
+    color: #0000ff;
+    text-decoration:none;
+}
+
+a.listRowOdd:link {
+    color: #0000ff;
+    text-decoration:none;
+}
+a.listRowOdd:visited {
+    color: #0000ff;
+    text-decoration:none;
+}
+a.listRowOdd:hover {
+    color: #0000ff;
+    text-decoration:underline;
+}
+a.listRowOdd:active {
+    color: #0000ff;
+    text-decoration:none;
+}
+
+a.listview:link {
+    color: #ffcc00;
+    text-decoration:none;
+}
+a.listview:visited {
+    color: #ffcc00;
+    text-decoration:none;
+}
+a.listview:hover {
+    color: #ffcc00;
+    text-decoration:underline;
+}
+a.listview:active {
+    color: #ffcc00;
+    text-decoration:none;
+}
+
+a.sidebar {
+    display: block;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    text-decoration:none;
+    color: #0066aa;
+}
+
+a.sidebar:hover {
+    display: block;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    text-decoration: underline;
+    color: #0066aa;
+}
+
+body {
+    margin-right: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    text-align: left;
+    background-color: #7f7f7f;
+    font-size: 14px;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+div.container {
+    margin-left: 10px;
+    margin-right: 10px;
+    text-align: center;
+}
+
+div.container_footer {
+    width: 500px;
+    margin: 0 auto;
+}
+
+div.container_icons_CC {
+    text-align: center;
+}
+
+div.file_upload {
+    padding: 6px;
+    margin: 6px;
+    border-style: solid;
+    border-width: 1px;
+    color: #000000;
+    border-color: #aaaaaa;
+    background-color: #ffffff;
+}
+
+fieldset {
+    background-color: #eeeeee;
+}
+
+fieldset.container {
+    background-color: #666666;
+    border: none;
+    margin: 10px;
+    padding-top: 14px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 28px;
+}
+
+fieldset.container_invisible {
+    background-color: #7f7f7f;
+    display: inline-block;
+    border-width: 0px;
+    min-width: 500px;
+    text-align: left;
+}
+
+fieldset.top {
+    margin-top: 20px;
+    padding: 14px;
+    border-style: solid;
+    border-width: 1px;
+    border-bottom: none;
+    border-color: #aaaaaa;
+    background-color: #0e90fe;
+    color: #ffffff;
+    font-size: 18px;
+}
+
+fieldset.middle {
+    border-style: solid;
+    border-width: 1px;
+    padding: 21px;
+    border-color: #aaaaaa;
+    background-color: #eeeeee;
+}
+
+fieldset.bottom {
+    margin-top: 0px;
+    border-style: solid;
+    border-width: 1px;
+    border-top-width: 0px;
+    padding: 21px;
+    text-align: left;
+    border-color: #aaaaaa;
+    background-color: #cccccc;
+}
+
+fieldset.middle_top {
+    margin-top: 14px;
+    border-style: solid;
+    border-width: 1px;
+    padding: 21px;
+    border-color: #aaaaaa;
+    background-color: #eeeeee;
+}
+
+fieldset.fieldset_group {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+fieldset legend {
+    padding: 5px 10px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #aaaaaa;
+    color: #444444;
+    background-color: #ffffff;
+    font-weight: bold;
+}
+
+img {
+    border-style: none;
+    vertical-align: middle;
+}
+
+input {
+    font-size : 14px;
+    font-family: Monaco, "DejaVu Sans Mono", "Lucida Console", monospace;
+}
+
+input[type=button] {
+    margin-left: 7px;
+    margin-right: 7px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #aaaaaa;
+    padding: 3px 7px;
+    text-decoration: none;
+    color: #111111;
+    background-color: #eeeeee;
+    font-weight: bold;
+}
+input[type=button]:active {
+    position: relative;
+    top: 1px;
+    left: 1px;
+}
+
+input[type=checkbox] {
+    margin: 6px;
+}
+
+input[type=password]{
+    color: #000000;
+    border-color: #aaaaaa;
+    background-color: #ffffff;
+    padding: 6px;
+    margin: 6px;
+    border-style: solid;
+    border-width: 1px;
+}
+
+input[type=radio]{
+    border-color: #aaaaaa;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 14px;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+input[type=submit]{
+    margin-left: 7px;
+    margin-right: 7px;
+    border-style: solid;
+    border-width: 1px;
+    padding: 3px 7px;
+    text-decoration: none;
+    color: #111111;
+    border-color: #aaaaaa;
+    background-color: #eeeeee;
+    font-weight: bold;
+}
+
+input[type=submit]:active{
+    position: relative;
+    top: 1px;
+    left: 1px;
+}
+
+input[type=text]{
+    padding: 6px;
+    margin: 6px;
+    border-style: solid;
+    border-width: 1px;
+    color: #000000;
+    border-color: #aaaaaa;
+    background-color: #ffffff;
+}
+
+ol.normal {
+    padding-left:20px;
+    margin-left: 10px;
+}
+
+option {
+    padding-right: 15px;
+}
+
+.label {
+    padding-top: 14px;
+    text-align: right;
+}
+
+.messageError {
+    margin: 10px;
+    padding: 20px;
+    color: #000000;
+    border-color: #990000;
+    background-color: #cc3333;
+    font-size: 16px;
+    font-weight: bold;
+}
+.messageError a:link {
+    color: #0000ff;
+}
+.messageError a:visited {
+    color: #0000ff;
+}
+.messageError a:hover {
+    color: #0000ff;
+}
+.messageError a:active {
+    color: #0000ff;
+}
+
+.messageInfo {
+    margin: 10px;
+    padding: 20px;
+    color: #000000;
+    border-color: #3366cc;
+    background-color: #76aadb;
+    font-size: 16px;
+}
+.messageInfo a:link {
+    color: #0000ff;
+}
+.messageInfo a:visited {
+    color: #0000ff;
+}
+.messageInfo a:hover {
+
+
+    color: #0000ff;
+}
+.messageInfo a:active {
+    color: #0000ff;
+}
+
+.messageSystem {
+    margin: 10px;
+    padding: 20px;
+    color: #000000;
+    border-color: #006600;
+    background-color: #66cc66;
+    font-size: 16px;
+    font-weight: bold;
+}
+.messageSystem a:link {
+    color: #0000ff;
+}
+.messageSystem a:visited {
+    color: #0000ff;
+}
+.messageSystem a:hover {
+    color: #0000ff;
+}
+.messageSystem a:active {
+    color: #0000ff;
+}
+
+.messageTip {
+    margin: 10px;
+    padding: 20px;
+    color: #000000;
+    border-color: #d2cd54;
+    background-color: #fffacc;
+
+    font-size: 16px;
+}
+.messageTip a:link {
+    color: #0000ff;
+}
+.messageTip a:visited {
+    color: #0000ff;
+}
+.messageTip a:hover {
+    color: #0000ff;
+}
+.messageTip a:active {
+    color: #0000ff;
+}
+
+.pageHeaderText {
+    color: #cccccc;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.pageHeaderDiv {
+    padding-top: 14px;
+    padding-left: 10px;
+}
+
+p.detail_view {
+    margin: 8px;
+    padding-top: 6px;
+    max-width: 900px;
+    word-wrap: break-word;
+}
+
+p.multifield_detail_view {
+    margin: 8px;
+    padding-top: 6px;
+    word-wrap: break-word;
+}
+
+p.multifield_detail_view_label {
+    margin: 8px;
+    margin-left: 16px;
+    font-weight: bold;
+    word-wrap: break-word;
+}
+
+select {
+    padding: 5px;
+    margin: 6px;
+    border-style: solid;
+    border-width: 1px;
+    color: #000000;
+    border-color: #aaaaaa;
+    background-color: #ffffff;
+    font-family: Monaco, "DejaVu Sans Mono", "Lucida Console", monospace;
+}
+
+table {
+    color: #000000;
+    border-collapse: collapse;
+}
+
+table.input_form td {
+    vertical-align: top;
+}
+
+table.listView {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+table.listView td {
+    padding: 2px;
+    padding-left: 10px;
+    border-top: none;
+    border-bottom: none;
+    border-left: solid 1px #999999;
+    border-right: solid 1px #999999;
+}
+
+table.listView tr[class=listRowHead] td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    padding-left: 10px;
+}
+
+
+td.menu {
+    text-align: center;
+}
+
+td.oper_col {
+    min-width: 140px;
+    text-align: center;
+}
+
+tr.listRowEven {
+    background-color: #dddddd;
+}
+
+tr.listRowEvenNoHighlight {
+    background-color: #dddddd;
+}
+
+tr.listRowHead {
+    color: #000000;
+    background-color: #0e90fe;
+    text-align: center;
+    font-weight: bold;
+}
+
+tr.listRowOdd {
+    background-color: #eeeeee;
+}
+
+tr.listRowOddNoHighlight {
+    background-color: #eeeeee;
+}
+
+tr.listViewBar {
+    background-color: #dddddd;
+    color: #000000;
+}
+
+.text-info {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+textarea {
+    font-size : 14px;
+    padding:6px;
+    margin:6px;
+    border-style: solid;
+    border-width: 1px;
+    color: #000000;
+    border-color: #aaaaaa;
+    background-color: #ffffff;
+    font-family: Monaco, "DejaVu Sans Mono", "Lucida Console", monospace;
+}
+
+.throbber {
+    width: 94px;
+    height:94px;
+    position: fixed;
+    top: 45%;
+    left: 45%;
+    z-index: 1000;
+}
+
+.throbber_screen_locker{
+    position:fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+    background-color: rgba(255, 255, 255, .6);
+}
