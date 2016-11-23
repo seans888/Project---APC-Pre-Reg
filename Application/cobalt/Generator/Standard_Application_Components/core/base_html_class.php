@@ -8,7 +8,7 @@ class base_html
 
     var $arr_fields = array();
     var $arr_field_labels = array();
-    var $custom_headear='';
+    var $custom_header='';
     var $date_control_year_start='1950';
     var $date_control_year_end='2050';
     var $date_control_default_value = 'current';
@@ -30,11 +30,19 @@ class base_html
     var $with_form = FALSE;
     var $year_set = '';
 
+    var $bound_objects = array();
+
     function autofocus($field_name)
     {
         echo '<script>' . "\r\n";
         echo 'document.getElementById(\'' . $field_name . '\').focus();' . "\r\n";
         echo '</script>' . "\r\n";
+    }
+
+    function bind_child($object_name, $object)
+    {
+        $this->bound_objects[$object_name] = $object;
+        return $this;
     }
 
     function display_error($message)
@@ -166,7 +174,14 @@ class base_html
             if(substr($fieldset, 0, 6) == '__mf__')
             {
                 //This is a multifield, not a regular field
-                $subclass = cobalt_load_class($fields . '_html');
+                if(isset($this->bound_objects[$fields]))
+                {
+                    $subclass = $this->bound_objects[$fields];
+                }
+                else
+                {
+                    $subclass = cobalt_load_class($fields . '_html');
+                }
                 $subclass->detail_view = $this->detail_view;
                 $subclass->tabindex = $this->tabindex;
                 $subclass->draw_controls_mf();
@@ -232,7 +247,14 @@ class base_html
             {
                 if(!in_array($rel_info['table'], $arr_drawn_multifields))
                 {
-                    $subclass = cobalt_load_class($rel_info['table'] . '_html');
+                    if(isset($this->bound_objects[$rel_info['table']]))
+                    {
+                        $subclass = $this->bound_objects[$rel_info['table']];
+                    }
+                    else
+                    {
+                        $subclass = cobalt_load_class($rel_info['table'] . '_html');
+                    }
                     $subclass->detail_view = $this->detail_view;
                     $subclass->tabindex = $this->tabindex;
                     $subclass->draw_controls_mf();
@@ -305,7 +327,7 @@ class base_html
                                                 {
                                                     $arr_controls[] = 'draw_select_field_from_query_mf';
                                                 }
-                                                $arr_parameters[] = array($field_struct['list_settings'], $cf_name);
+                                                $arr_parameters[] = array($field_struct['list_settings'], $cf_name, $extra);
                                                 break;
 
                     case 'password'         :   $arr_labels[] = $field_struct['label'];
@@ -734,7 +756,7 @@ class base_html
                                             $this->draw_text_field($field_struct['label'], $field_name, $this->detail_view, $field_struct['control_type'], $draw_table_tags, $extra);
                                             break;
 
-                case 'upload'           :   $this->draw_file_upload($field_struct['label'], $field_name, $field_struct['upload_path'], $this->detail_view, $draw_table_tags);
+                case 'upload'           :   $this->draw_file_upload($field_struct['label'], $field_name, $this->detail_view, $draw_table_tags);
                                             break;
 
                 case 'none'             :   break;
@@ -795,7 +817,7 @@ class base_html
         return $this;
     }
 
-    function draw_file_upload($cobalt_text_field_label, $tf_control_name='', $upload_path='', $detail_view=FALSE, $draw_table_tags=TRUE, $extra='')
+    function draw_file_upload($cobalt_text_field_label, $tf_control_name='', $detail_view=FALSE, $draw_table_tags=TRUE, $extra='')
     {
         if($tf_control_name=='') $tf_control_name=$cobalt_text_field_label;
 
@@ -829,9 +851,6 @@ class base_html
                     echo $display_name . '&nbsp;';
                 }
             }
-
-            require 'components/get_max_attachment_size.php';
-            //echo '<input type="hidden" name="MAX_FILE_SIZE" value="' . $max_attachment_size . '">';
 
             ++$this->tabindex;
             echo '<input type="file" id="' . $tf_control_name . '" name="' . $tf_control_name . '" tabindex="' . $this->tabindex . '" ' . $extra . '>';
@@ -888,9 +907,6 @@ class base_html
                     echo $display_name . '&nbsp;';
                 }
             }
-
-            require 'components/get_max_attachment_size.php';
-            //echo '<input type="hidden" name="MAX_FILE_SIZE" value="' . $max_attachment_size . '">';
 
             ++$this->tabindex;
             echo '<input type="file" name="' . $form_control_name . '[' . $cntr . ']" tabindex="' . $this->tabindex . '" ' . $extra . '>';
@@ -1039,6 +1055,11 @@ class base_html
 
     function draw_page_title($title)
     {
+        $pos = strpos($title, '%%');
+        if($pos !== false)
+        {
+            $title = substr_replace($title, $this->readable_name, $pos, 2);
+        }
         echo '<div class="pageHeaderDiv"><span class="pageHeaderText">'. $title .'</span></div>' . "\r\n";
 
         return $this;
@@ -1425,7 +1446,7 @@ class base_html
             echo '<tr><td class="label">' . $cobalt_field_label . ':</td><td>' . "\r\n";
         }
 
-        if($detail_view == TRUE && 
+        if($detail_view == TRUE &&
             isset($this->fields[$tf_control_name]['allow_html_tags']) &&
             $this->fields[$tf_control_name]['allow_html_tags'] == TRUE)
         {
@@ -1482,8 +1503,8 @@ class base_html
 
         $control_type = strtolower($control_type);
         init_var(${$form_control_name}[$cntr]);
-        
-        if($html_flag == 'ALLOW' && $detail_view == TRUE) 
+
+        if($html_flag == 'ALLOW' && $detail_view == TRUE)
         {
             $value = ${$form_control_name}[$cntr];
         }
@@ -1491,7 +1512,7 @@ class base_html
         {
             $value = cobalt_htmlentities(${$form_control_name}[$cntr]);
         }
-        
+
         if($detail_view==FALSE)
         {
             ++$this->tabindex;
@@ -1604,7 +1625,7 @@ class base_html
                     echo '<p>';
                 }
 
-                $this->$arr_multifield['field_controls'][$b]($arr_multifield['field_parameters'][$b], $a);
+                $this->{$arr_multifield['field_controls'][$b]}($arr_multifield['field_parameters'][$b], $a);
                 echo '</p></td>' . "\r\n";
 
             }

@@ -4,7 +4,7 @@ class system_log_rpt extends reporter
 {
     var $tables='';
     var $session_array_name = 'SYSTEM_LOG_REPORT_CUSTOM';
-    var $report_title = 'Security Monitor';
+    var $report_title = '%%';
     var $html_subclass = 'system_log_html';
     var $data_subclass = 'system_log';
     var $result_page = 'security_monitor2.php';
@@ -20,17 +20,5 @@ class system_log_rpt extends reporter
         $this->tables        = system_log_dd::$table_name;
         $this->readable_name = system_log_dd::$readable_name;
         $this->get_report_fields();
-    }
-
-    function preprocess($field, $value)
-    {
-        $transformed_value = '';
-        switch($field)
-        {
-            case 'datetime': $transformed_value = strtotime($value);
-                             break;
-            default        : $transformed_value = $value;
-        }
-        return $transformed_value;
     }
 }

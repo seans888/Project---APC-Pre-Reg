@@ -12,7 +12,7 @@ if(xsrf_guard())
         header("location: ListView_Pages.php");
         exit();
     }
-    
+
     if($_POST['btnSubmit'])
     {
         extract($_POST);

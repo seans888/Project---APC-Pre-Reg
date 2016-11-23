@@ -5,77 +5,35 @@ init_SCV2();
 if(isset($_GET['Field_ID']))
 {
     $Field_ID = rawurldecode($_GET['Field_ID']);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT a.Table_Name, b.Field_Name, b.Field_ID, b.Data_Type, b.Control_Type, 
-                                b.Length, b.Attribute, b.Label, b.In_Listview, b.Nullable
-                            FROM `table` a, `table_fields` b 
-                            WHERE a.Table_ID = b.Table_ID AND
-                                  b.Field_ID = '$Field_ID' 
-                            ORDER BY a.`Table_Name`, b.`Field_Name`");
-                            
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare('SELECT a.Table_Name, b.* FROM "table" a, table_fields b WHERE a.Table_ID = b.Table_ID AND b.Field_ID = :f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
-        $result->close();
+        $data = $result->fetchArray();
         extract($data);
+        $result->finalize();
     }
-    else die($mysqli->error);
-    $mysqli->close();
 
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Book_List_Generator 
-                            FROM `table_fields_book_list` 
-                            WHERE Field_ID='$Field_ID'");
-    if($result = $mysqli->store_result())
+    $stmt = $d->prepare('SELECT b.List_Name FROM table_fields_list a, table_fields_predefined_list b WHERE a.Field_ID=:f_id AND a.List_ID = b.List_ID');
+    $stmt->bindValue(':f_id', $Field_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
-        $result->close();
-        if($data!="") extract($data);
-        else $Book_List_Generator="NONE";
-    }
-    else die($mysqli->error);
-    $mysqli->close();
-
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT b.List_Name 
-                            FROM `table_fields_list` a, `table_fields_predefined_list` b 
-                            WHERE a.Field_ID='$Field_ID' AND a.List_ID = b.List_ID");
-    if($result = $mysqli->use_result())
-    {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         if($data!="") extract($data);
         else $List_Name="NONE";
-        $result->close();        
+        $result->finalize();
     }
-    else die($mysqli->error);
-    $mysqli->close();
 
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT a.Field_Name FROM table_fields a, table_fields_list_source_link b WHERE a.Field_ID=b.Field_ID AND a.Field_ID='$Field_ID'");
-    if($result = $mysqli->store_result())
-    {
-        $data = $result->fetch_assoc();
-        $Link_Field = $data['Field_Name'];
-    }    
-    $mysqli->close();
+    $stmt_select = $d->prepare('SELECT b.Field_Name, a.Display FROM table_fields_list_source_select a, table_fields b
+                                WHERE a.Field_ID=:f_id AND a.Select_Field_ID = b.Field_ID');
+    $stmt_select->bindValue(':f_id', $Field_ID);
 
-    $mysqli_validation_routines = connect_DB();
-    $mysqli_validation_routines->real_query("SELECT Validation_Routine 
-                                                FROM `table_fields_secondary_validation` 
-                                                WHERE Field_ID='$Field_ID'");
 
-    $mysqli_select_parameters = connect_DB();
-    $mysqli_select_parameters->real_query("SELECT b.Field_Name, a.Display  
-                                                FROM `table_fields_list_source_select` a, 
-                                                     `table_fields` b  
-                                                WHERE a.Field_ID='$Field_ID' AND a.Select_Field_ID = b.Field_ID");
-
-    $mysqli_where_parameters = connect_DB();
-    $mysqli_where_parameters->real_query("SELECT b.Field_Name, a.Where_Field_Operand, a.Where_Field_Value, a.Where_Field_Connector 
-                                                FROM `table_fields_list_source_where` a, 
-                                                     `table_fields` b  
-                                                WHERE a.Field_ID='$Field_ID' AND a.Where_Field_ID = b.Field_ID");
+    $stmt_where = $d->prepare('SELECT b.Field_Name, a.Where_Field_Operand, a.Where_Field_Value, a.Where_Field_Connector
+                                FROM table_fields_list_source_where a, table_fields b WHERE a.Field_ID=:f_id AND a.Where_Field_ID = b.Field_ID');
+    $stmt_where->bindValue(':f_id', $Field_ID);
 }
 elseif(xsrf_guard())
 {
@@ -103,62 +61,93 @@ echo '<input type="hidden" name="Field_ID" value="' . $Field_ID . '">';
 <fieldset class="top">
 Delete Table Field
 </fieldset>
-
 <fieldset class="middle">
-<table class="input_form">
-<?php
-drawTextField('Table','Table_Name',TRUE);
-drawTextField('Field Name', 'Field_Name',TRUE);
-drawTextField('Data Type','Data_Type',TRUE);
-drawTextField('Nullable', 'Nullable', TRUE);
-drawTextField('Length','',TRUE);
-drawTextField('Attribute','',TRUE);
-drawTextField('Control Type','Control_Type',TRUE);
-drawTextField('Label','',TRUE);
-drawTextField('Show in list view', 'In_Listview', TRUE);
 
-echo '<tr><td colspan=2 align=center><hr> Secondary Validation Routines: <br><table align=center><tr><td align=left><ol>';
-if($result = $mysqli_validation_routines->store_result())
-{ 
-    if($result->num_rows > 0)
-        while($row = $result->fetch_assoc()) 
-            echo '<li>' . $row['Validation_Routine'];
-    else
-        echo 'NONE';
-}        
-echo '</td></tr></table></ol><hr></td></tr>';
+    <?php
+    fieldsetStart('Data Settings');
+    drawTextField('Table','Table_Name',TRUE);
+    drawTextField('Field Name','Field_Name',TRUE);
+    drawTextField('Data Type','Data_Type',TRUE);
+    drawTextField('Nullable', 'Nullable', TRUE);
+    drawTextField('Length','',TRUE);
+    drawTextField('Attribute','',TRUE);
+    drawTextField('Auto Increment','Auto_Increment',TRUE);
+    fieldsetEnd();
 
+    fieldsetStart('HTML Settings');
+    drawTextField('Show in List View Page','In_Listview', TRUE);
+    drawTextField('Control Type','Control_Type',TRUE);
+    drawTextField('Label','',TRUE);
+    drawTextField('Size','',TRUE);
+    drawTextField('Extra','',TRUE);
+    drawTextField('Companion','',TRUE);
+    drawTextField('Drop-Down List Has Blank','Drop_Down_Has_Blank',TRUE);
+    drawTextField('Predefined List', 'List_Name', TRUE);
+    fieldsetEnd();
 
-drawTextField('Booklist Generator', 'Book_List_Generator',TRUE);
-drawTextField('Predefined List', 'List_Name', TRUE);
+    fieldsetStart('Validation Settings');
+    drawTextField('Required','',TRUE);
+    drawTextField('Char Set Method','Char_Set_Method',TRUE);
+    drawTextField('Char Set Allow Space','Char_Set_Allow_Space',TRUE);
+    drawTextField('Extra Chars Allowed','Extra_Chars_Allowed',TRUE);
+    drawTextField('Valid Set','Valid_Set',TRUE);
+    fieldsetEnd();
 
+    fieldsetStart('Reporter Settings');
+    drawTextField('In Report','RPT_In_Report',TRUE);
+    drawTextField('Column Format', 'RPT_Column_Format',TRUE);
+    drawTextField('Column Alignment', 'RPT_Column_Alignment',TRUE);
+    drawTextField('Show Sum', 'RPT_Show_Sum',TRUE);
+    fieldsetEnd();
 
-echo '<tr><td colspan=2 align=center><hr> List SELECT Parameters: <br><table align=center><tr><td align=left><ol>';
-if($result = $mysqli_select_parameters->store_result())
-{ 
-    if($result->num_rows > 0)
-        while($row = $result->fetch_assoc()) 
-            echo '<li>' . $row['Field_Name'] . '&nbsp - &nbsp' . $row['Display'];
-    else
-        echo 'NONE';
-}        
-echo '</td></tr></table></ol><hr></td></tr>';
+    fieldsetStart('Defaults');
+    drawTextField('Default Value','Default_Value',TRUE);
+    drawTextField('Date Default','Date_Default',TRUE);
+    fieldsetEnd();
 
-echo '<tr><td colspan=2 align=center><hr> List WHERE Parameters: <br><table align=center><tr><td align=left><ol>';
-if($result = $mysqli_where_parameters->store_result())
-{ 
-    if($result->num_rows > 0)
-        while($row = $result->fetch_assoc()) 
+    fieldsetStart('Misc Settings');
+    drawTextField('Allow HTML Tags','Allow_HTML_Tags',TRUE);
+    drawTextField('Trim Value','Trim_Value',TRUE);
+    fieldsetEnd();
+
+    fieldsetStart('Additional Options');
+    echo '<tr><td colspan=2 align=center><hr> List SELECT Parameters: <br><table align=center><tr><td align=left><ol>';
+    if($result = $stmt_select->execute())
+    {
+        $num_rows = 0;
+        while($row = $result->fetchArray())
+        {
+            echo '<li>' . $row['Field_Name'] . '&nbsp; - &nbsp;' . $row['Display'];
+            ++$num_rows;
+        }
+        if($num_rows == 0)
+        {
+            echo 'NONE';
+        }
+    }
+    echo '</td></tr></table></ol><hr></td></tr>';
+
+    echo '<tr><td colspan=2 align=center><hr> List WHERE Parameters: <br><table align=center><tr><td align=left><ol>';
+    if($result = $stmt_where->execute())
+    {
+        $num_rows = 0;
+        while($row = $result->fetchArray())
+        {
             echo '<li>' . $row['Field_Name'] . '&nbsp; - &nbsp;'
-                        . $row['Where_Field_Operand']  . '&nbsp; - &nbsp;' 
-                        . $row['Where_Field_Value'] . '&nbsp; - &nbsp;' 
+                        . $row['Where_Field_Operand']  . '&nbsp; - &nbsp;'
+                        . $row['Where_Field_Value'] . '&nbsp; - &nbsp;'
                         . $row['Where_Field_Connector'];
-    else
-        echo 'NONE';
-}        
-echo '</td></tr></table></ol><hr></td></tr>';
-?>
-</table>
+        }
+        if($num_rows == 0)
+        {
+            echo 'NONE';
+        }
+    }
+    echo '</td></tr></table></ol><hr></td></tr>';
+    fieldsetEnd();
+    fieldsetEnd();
+    ?>
+
 </fieldset>
 <fieldset class="bottom">
 <?php

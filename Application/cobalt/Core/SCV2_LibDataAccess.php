@@ -2,44 +2,33 @@
 /*
  * SCV2_LibDataAccess.php
  * FRIDAY, November 28, 2006
- * SCV2 library file containing data access (SQL) functions
+ * Updated for SQLite3: March 19, 2016
  * JV Roig
  */
 
 function connect_DB()
 {
-    //Create DB connection constants if invoked for the first time
-    if(!defined('DB_HOST')) define('DB_HOST', 'localhost');
-    if(!defined('DB_USER')) define('DB_USER', 'root');
-    if(!defined('DB_PASS')) define('DB_PASS', '');
-    if(!defined('DB_USE'))  define('DB_USE', 'cobalt');
-
-    $mysqli = new mysqli(DB_HOST,DB_USER,DB_PASS,DB_USE);
-
-    if(mysqli_connect_errno())
-    {
-        trigger_error(mysqli_connect_error(), E_USER_ERROR);
-    }
-
-    return $mysqli;
+    $path = dirname(__FILE__)  . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'metadata' . DIRECTORY_SEPARATOR;
+    $d = new SQLite3($path . 'cobalt.db');
+    return $d;
 }
 
 function cobalt_tables_self_check()
 {
-    connect_DB()->real_query("SELECT * FROM database_connection") or trigger_error('MISSING TABLE: database_connection', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM page") or trigger_error('MISSING TABLE: page', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM project") or trigger_error('MISSING TABLE: project', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM `table`") or trigger_error('MISSING TABLE: table', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields") or trigger_error('MISSING TABLE: table_fields', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_book_list") or trigger_error('MISSING TABLE: table_fields_book_list', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_list") or trigger_error('MISSING TABLE: table_fields_list', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_list_source_select") or trigger_error('MISSING TABLE: table_fields_list_source_select', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_list_source_where") or trigger_error('MISSING TABLE: table_fields_list_source_where', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_predefined_list") or trigger_error('MISSING TABLE: table_fields_predefined_list', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_predefined_list_items") or trigger_error('MISSING TABLE: table_fields_predefined_list_items', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_fields_secondary_validation") or trigger_error('MISSING TABLE: table_fields_secondary_validation', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_pages") or trigger_error('MISSING TABLE: table_pages', E_USER_ERROR);
-    connect_DB()->real_query("SELECT * FROM table_relations") or trigger_error('MISSING TABLE: table_relations', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM database_connection") or trigger_error('MISSING TABLE: database_connection', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM page") or trigger_error('MISSING TABLE: page', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM project") or trigger_error('MISSING TABLE: project', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM `table`") or trigger_error('MISSING TABLE: table', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_fields") or trigger_error('MISSING TABLE: table_fields', E_USER_ERROR);
+    //connect_DB()->exec("SELECT * FROM table_fields_book_list") or trigger_error('MISSING TABLE: table_fields_book_list', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_fields_list") or trigger_error('MISSING TABLE: table_fields_list', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_fields_list_source_select") or trigger_error('MISSING TABLE: table_fields_list_source_select', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_fields_list_source_where") or trigger_error('MISSING TABLE: table_fields_list_source_where', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_fields_predefined_list") or trigger_error('MISSING TABLE: table_fields_predefined_list', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_fields_predefined_list_items") or trigger_error('MISSING TABLE: table_fields_predefined_list_items', E_USER_ERROR);
+    //connect_DB()->exec("SELECT * FROM table_fields_secondary_validation") or trigger_error('MISSING TABLE: table_fields_secondary_validation', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_pages") or trigger_error('MISSING TABLE: table_pages', E_USER_ERROR);
+    connect_DB()->exec("SELECT * FROM table_relations") or trigger_error('MISSING TABLE: table_relations', E_USER_ERROR);
 }
 
 function recursive_trim(&$param)
@@ -62,21 +51,14 @@ function recursive_trim(&$param)
 
 function queryProjectName($Project_ID)
 {
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT Project_Name FROM project WHERE Project_ID='$Project_ID'");
-
-    if ($result = $db_handle->use_result())
-    {
-        $row = $result->fetch_assoc();
-        $result->close();
-    }
-
-    return $row['Project_Name'];
+    $d = connect_DB();
+    $project_name = $d->querySingle("SELECT Project_Name FROM project WHERE Project_ID='$Project_ID'");
+    return $project_name;
 }
 
 function queryCreateNewProject($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
@@ -85,22 +67,24 @@ function queryCreateNewProject($param)
     $Project_ID = get_token();
 
     // create a prepared statement
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO project(`Project_ID`, `Project_Name`, Client_Name, Project_Description, Base_Directory) VALUES (?,?,?,?,?)"))
+    $stmt = $d->prepare("INSERT INTO project(Project_ID, Project_Name, Client_Name, Project_Description, Base_Directory)
+                            VALUES (:project_id, :project_name, :client_name, :description, :base_dir)");
+    $stmt->bindValue(':project_id',$Project_ID);
+    $stmt->bindValue(':project_name',$Project_Name);
+    $stmt->bindValue(':client_name',$Client_Name);
+    $stmt->bindValue(':description',$Project_Description);
+    $stmt->bindValue(':base_dir',$Base_Directory);
+    if($stmt->execute())
     {
-        $stmt->bind_param("sssss", $Project_ID, $Project_Name, $Client_Name, $Project_Description, $Base_Directory);
-        $stmt->execute();
-        $stmt->close();
-
         $_SESSION['Project_Name'] = $Project_Name;
-        $_SESSION['Project_ID'] = $Project_ID;
+        $_SESSION['Project_ID']   = $Project_ID;
     }
-    else die($stmt->error);
+    else die("Failed to create new project.");
 }
 
 function queryCreateDBConnection($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
@@ -108,25 +92,23 @@ function queryCreateDBConnection($param)
     //get new Database_Connection_ID
     $DB_ID = get_token();
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO database_connection(`Project_ID`, `DB_Connection_ID`, `DB_Connection_Name`, `Hostname`, `Username`, `Password`, `Database`) VALUES(?,?,?,?,?,?,?)"))
-    {
-        $stmt->bind_param("sssssss", $Project_ID, $DB_ID, $DB_Connection_Name, $Hostname, $Username, $Password, $Database);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare('INSERT INTO database_connection(Project_ID, DB_Connection_ID, DB_Connection_Name, Hostname, Username, Password, "Database")
+                            VALUES(:project_id, :db_con_id, :db_con_name, :hostname, :username, :password, :database)');
+    $stmt->bindValue(':project_id', $Project_ID);
+    $stmt->bindValue(':db_con_id', $DB_ID);
+    $stmt->bindValue(':db_con_name', $DB_Connection_Name);
+    $stmt->bindValue(':hostname', $Hostname);
+    $stmt->bindValue(':username', $Username);
+    $stmt->bindValue(':password', $Password);
+    $stmt->bindValue(':database', $Database);
+    $stmt->execute() or die("Failed to create database connection.");
 
     if($Default_Connection == 'Yes')
     {
-        $stmt = $mysqli->stmt_init();
-        if($stmt->prepare("UPDATE `project` SET Database_Connection_ID=? WHERE Project_ID=?"))
-        {
-            $stmt->bind_param("ss", $DB_ID, $_SESSION['Project_ID']);
-            $stmt->execute();
-            $stmt->close();
-        }
-        else die($stmt->error);
+        $stmt = $d->prepare("UPDATE project SET Database_Connection_ID=:db_con_id WHERE Project_ID=:project_id");
+        $stmt->bindValue(':db_con_id',$DB_ID);
+        $stmt->bindValue(':project_id', $Project_ID);
+        $stmt->execute() or die("Failed to set default database connection.");
     }
 
     return $DB_ID;
@@ -134,26 +116,25 @@ function queryCreateDBConnection($param)
 
 function queryCreatePage($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
     $Page_ID = get_token();
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO page(`Page_ID`, `Page_Name`, `Generator`, `Description`) VALUES(?,?,?,?)"))
-    {
-        $stmt->bind_param("ssss", $Page_ID, $Page_Name, $Generator, $Description);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare('INSERT INTO page(Page_ID, Page_Name, Generator, Description)
+                            VALUES(:p_id, :p_name, :gen, :description)');
+    $stmt->bindValue(':p_id', $Page_ID);
+    $stmt->bindValue(':p_name', $Page_Name);
+    $stmt->bindValue(':gen', $Generator);
+    $stmt->bindValue(':description', $Description);
+    $stmt->execute() or die('Failed to create page.');
 }
 
 function queryCreatePredefinedList($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
@@ -163,37 +144,31 @@ function queryCreatePredefinedList($param)
 
     $numItems = count($List_Item);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_fields_predefined_list(`List_ID`, `Project_ID`, `List_Name`, `Remarks`) VALUES(?, ?,?,?)"))
-    {
-        $stmt->bind_param("ssss", $List_ID, $_SESSION['Project_ID'], $List_Name, $Remarks);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare('INSERT INTO table_fields_predefined_list(List_ID, Project_ID, List_Name, Remarks)
+                            VALUES(:list_id, :proj_id, :list_name, :remarks)');
+    $stmt->bindValue(':list_id', $List_ID);
+    $stmt->bindValue(':proj_id', $_SESSION['Project_ID']);
+    $stmt->bindValue(':list_name', $List_Name);
+    $stmt->bindValue(':remarks', $Remarks);
+    $stmt->execute() or die('Failed to create predefined list.');
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_fields_predefined_list_items(`List_ID`, `Number`, `List_Item`) VALUES(?,?,?)"))
+    $stmt = $d->prepare('INSERT INTO table_fields_predefined_list_items(List_ID, Number, List_Item)
+                            VALUES(:list_id, :num, :item)');
+    $stmt->bindValue(':list_id', $List_ID);
+    $stmt->bindParam(':num', $Number);
+    $stmt->bindParam(':item', $New_Item);
+    for($a=0;$a<$numItems;++$a)
     {
-        $stmt->bind_param("sis", $List_ID, $Number, $New_Item);
-        for($a=0;$a<$numItems;++$a)
-        {
-            $Number = $a+1;
-            $New_Item = $List_Item[$a];
-            $stmt->execute();
-        }
-        $stmt->close();
+        $Number = $a+1;
+        $New_Item = $List_Item[$a];
+        $stmt->execute() or die('Failed inserting list items - loop ' . $a . '.');
     }
-    else die($stmt->error);
 }
 
 function queryCreateStandardLists()
 {
     $Project_ID = $_SESSION['Project_ID'];
-    $mysqli = connect_DB();
-    $mysqli->real_query('OPTIMIZE TABLE table_fields_predefined_list, table_fields_predefined_list_items');
-    $mysqli->close();
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     $arr_list = array(0=>array('Male/Female','Male/Female gender list'),
                       1=>array('On/Off', 'On/Off status list'),
@@ -208,38 +183,39 @@ function queryCreateStandardLists()
                            3=>array('M','F'),
                            4=>array('Yes','No'),
                            5=>array('Y','N'));
+
+    $stmt = $d->prepare('INSERT INTO table_fields_predefined_list(`List_ID`, `Project_ID`, `List_Name`, `Remarks`)
+                            VALUES(:list_id, :proj_id, :list_name, :remarks)');
+    $stmt->bindParam(':list_id', $List_ID);
+    $stmt->bindParam(':proj_id', $Project_ID);
+    $stmt->bindParam(':list_name', $List_Name);
+    $stmt->bindParam(':remarks', $Remarks);
+
+    $stmt_items = $d->prepare('INSERT INTO table_fields_predefined_list_items(`List_ID`, `Number`, `List_Item`)
+                                VALUES(:list_id, :num, :item)');
+    $stmt_items->bindParam(':list_id', $List_ID);
+    $stmt_items->bindParam(':num', $item_counter);
+    $stmt_items->bindParam(':item', $item);
+
     foreach($arr_list as $index=>$list)
     {
         //get new List_ID
         $List_ID = get_token();
         $List_Name = $list[0];
         $Remarks = $list[1];
+        $stmt->execute() or die("Failed to create new list.");
 
-        $stmt = $mysqli->stmt_init();
-        if($stmt->prepare("INSERT INTO table_fields_predefined_list(`List_ID`, `Project_ID`, `List_Name`, `Remarks`) VALUES(?,?,?,?)"))
-        {
-            $stmt->bind_param("ssss", $List_ID, $Project_ID, $List_Name, $Remarks);
-            $stmt->execute();
-            $stmt->close();
-        }
-        else die('Predefined list error: ' . $stmt->error);
-
-
-        $stmt = $mysqli->stmt_init();
-        $stmt->prepare("INSERT INTO table_fields_predefined_list_items(`List_ID`, `Number`, `List_Item`) VALUES(?,?,?)") or die('List item error: ' . $stmt->error);
         $item_counter=1;
         foreach($arr_list_item[$index] as $item)
         {
-            $stmt->bind_param("sis", $List_ID, $item_counter, $item);
-            $stmt->execute();
+            $stmt_items->execute() or die("Failed to create list item.");
             ++$item_counter;
         }
-        $stmt->close();
     }
 }
 function queryCreateTable($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
@@ -249,35 +225,31 @@ function queryCreateTable($param)
 
     $numPages = count($Page_ID);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO `table` (`Table_ID`, `Project_ID`, `DB_Connection_ID`, `Table_Name`, `Remarks`) VALUES(?,?,?,?,?)"))
+    $stmt = $d->prepare('INSERT INTO "table" (Table_ID, Project_ID, DB_Connection_ID, Table_Name, Remarks)
+                            VALUES(:t_id, :p_id, :db_id, :t_name, :remarks)');
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->bindValue(':p_id', $Project_ID);
+    $stmt->bindValue(':db_id', $DB_Connection_ID);
+    $stmt->bindValue(':t_name', $Table_Name);
+    $stmt->bindValue(':remarks', $Remarks);
+    $stmt->execute() or die("Failed to create table.");
+
+    $stmt = $d->prepare('INSERT INTO table_pages(Table_ID, Page_ID, Path_Filename)
+                            VALUES(:t_id, :p_id, :path)');
+    $stmt->bindParam(':t_id', $Table_ID);
+    $stmt->bindParam(':p_id', $New_Page);
+    $stmt->bindParam(':path', $New_Path_Filename);
+    for($a=0; $a<$numPages; ++$a)
     {
-        $stmt->bind_param("sssss", $Table_ID, $Project_ID, $DB_Connection_ID, $Table_Name, $Remarks);
-        $stmt->execute();
-        $stmt->close();
+        $New_Page = $Page_ID[$a];
+        $New_Path_Filename = $Path_Filename[$a];
+        $stmt->execute() or die("Failed to create table pages");
     }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_pages(`Table_ID`, `Page_ID`, `Path_Filename`) VALUES(?,?,?)"))
-    {
-        $stmt->bind_param("sss", $Table_ID, $New_Page, $New_Path_Filename);
-
-        for($a=0; $a<$numPages; ++$a)
-        {
-            $New_Page = $Page_ID[$a];
-            $New_Path_Filename = $Path_Filename[$a];
-            $stmt->execute();
-        }
-
-        $stmt->close();
-    }
-    else die($stmt->error);
 }
 
 function queryDefineTableField()
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($_POST);
     extract($_POST);
@@ -285,39 +257,42 @@ function queryDefineTableField()
     //Get new Field_ID
     $Field_ID = get_token();
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_fields(Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Control_Type, Label, In_Listview) VALUES(?,?,?,?,?,?,?,?,?,?)"))
-    {
-        $stmt->bind_param("sssssissss", $Field_ID,
-                                        $Table_ID,
-                                        $Field_Name,
-                                        $Data_Type,
-                                        $Nullable,
-                                        $Length,
-                                        $Attribute,
-                                        $Control_Type,
-                                        $Label,
-                                        $In_Listview);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare('INSERT INTO table_fields(Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Auto_Increment, Control_Type, Label, In_Listview,
+                                                  Default_Value, Required, Size, Extra, Companion, Char_Set_Method, Char_Set_Allow_Space, Extra_Chars_Allowed,
+                                                  Allow_HTML_Tags, Trim_Value, Valid_Set, Date_Default, Drop_Down_Has_Blank, RPT_In_Report, RPT_Column_Format,
+                                                  RPT_Column_Alignment, RPT_Show_Sum)
+                            VALUES(:f_id, :t_id, :f_name, :d_type, :null, :len, :attribute, :auto, :c_type, :label, :in_lv, :def_val, :req, :size, :extra,
+                                   :companion, :char_sm, :char_sas, :extra_ca, :a_html_t, :trim_val, :v_set, :date_def, :ddhb, :rpt_ir, :rpt_cf, :rpt_ca, :rpt_ss)');
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_fields_secondary_validation(Field_ID, Validation_Routine) VALUES(?,?)"))
-    {
-        $stmt->bind_param("ss", $Field_ID, $New_Validation_Routine);
-        for($a=0;$a<$particularsCount;++$a)
-        {
-            if($particularsCount > 1 && trim($Validation_Routine[0])!= "")
-            {
-                $New_Validation_Routine = $Validation_Routine[$a];
-                $stmt->execute();
-            }
-        }
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt->bindValue(':f_id', $Field_ID);
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->bindValue(':f_name', $Field_Name);
+    $stmt->bindValue(':d_type', $Data_Type);
+    $stmt->bindValue(':null', $Nullable);
+    $stmt->bindValue(':len', $Length);
+    $stmt->bindValue(':attribute', $Attribute);
+    $stmt->bindValue(':auto', $Auto_Increment);
+    $stmt->bindValue(':c_type', $Control_Type);
+    $stmt->bindValue(':label', $Label);
+    $stmt->bindValue(':in_lv', $In_Listview);
+    $stmt->bindValue(':def_val', $Default_Value);
+    $stmt->bindValue(':req', $Required);
+    $stmt->bindValue(':size', $Size);
+    $stmt->bindValue(':extra', $Extra);
+    $stmt->bindValue(':companion', $Companion);
+    $stmt->bindValue(':char_sm', $Char_Set_Method);
+    $stmt->bindValue(':char_sas', $Char_Set_Allow_Space);
+    $stmt->bindValue(':extra_ca', $Extra_Chars_Allowed);
+    $stmt->bindValue(':a_html_t', $Allow_HTML_Tags);
+    $stmt->bindValue(':trim_val', $Trim_Value);
+    $stmt->bindValue(':v_set', $Valid_Set);
+    $stmt->bindValue(':date_def', $Date_Default);
+    $stmt->bindValue(':ddhb', $Drop_Down_Has_Blank);
+    $stmt->bindValue(':rpt_ir', $RPT_In_Report);
+    $stmt->bindValue(':rpt_cf', $RPT_Column_Format);
+    $stmt->bindValue(':rpt_ca', $RPT_Column_Alignment);
+    $stmt->bindValue(':rpt_ss', $RPT_Show_Sum);
+    $stmt->execute() or die("Failed to create table field.");
 
     if($Control_Type != "textbox" &&
        $Control_Type != "textarea" &&
@@ -326,72 +301,58 @@ function queryDefineTableField()
        $Control_Type != "date controls")
     {
         $stmt = $mysqli->stmt_init();
-        if($Control_Type=="special textbox")
+        if($Control_Type=="radio buttons")
         {
-            if($stmt->prepare("INSERT INTO table_fields_book_list(Field_ID, Book_List_Generator) VALUES(?,?)"))
-            {
-                $stmt->bind_param("ss", $Field_ID, $Book_List_Generator);
-                $stmt->execute();
-            }
-            else die($stmt->error);
-        }
-        elseif($Control_Type=="radio buttons")
-        {
-            if($stmt->prepare("INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (?,?)"))
-            {
-                $stmt->bind_param("ss", $Field_ID, $List_ID);
-                $stmt->execute();
-            }
-            else die($stmt->error);
+            $stmt = $d->prepare('INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (:f_id, :l_id)');
+            $stmt->bindValue(':f_id', $Field_ID);
+            $stmt->bindValue(':l_id', $List_ID);
+            $stmt->execute() or die("Failed creating radio button list for field.");
         }
         elseif($Control_Type=="drop-down list")
         {
             if($DropdownType=="Predefined")
             {
-                if($stmt->prepare("INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (?,?)"))
-                {
-                    $stmt->bind_param("ss", $Field_ID, $List_ID);
-                    $stmt->execute();
-                }
-                else die($stmt->error);
+                $stmt = $d->prepare('INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (:f_id, :l_id)');
+                $stmt->bindValue(':f_id', $Field_ID);
+                $stmt->bindValue(':l_id', $List_ID);
+                $stmt->execute() or die("Failed creating drop-down list for field.");
             }
             elseif($DropdownType=="Source")
             {
-
-                if($stmt->prepare("INSERT INTO table_fields_list_source_select(Field_ID, Select_Field_ID, Display) VALUES(?,?,?)"))
+                $stmt = $d->prepare('INSERT INTO table_fields_list_source_select(Field_ID, Select_Field_ID, Display)
+                                        VALUES(:f_id, :s_id, :display)');
+                $stmt->bindParam(':f_id', $Field_ID);
+                $stmt->bindParam(':s_id', $New_Select_Field_ID);
+                $stmt->bindParam(':display', $New_Display);
+                for($a=0;$a<$selectCount;++$a)
                 {
-                    $stmt->bind_param("sss", $Field_ID, $New_Select_Field_ID, $New_Display);
+                    $New_Select_Field_ID = $Select_Field_ID[$a];
+                    $New_Display =  $Select_Field_Display[$a];
+                    $stmt->execute() or die("Failed creating SELECT clause for drop-down field.");
+                }
 
-                    for($a=0;$a<$selectCount;++$a)
+                $stmt = $d->prepare('INSERT INTO table_fields_list_source_where(Field_ID, Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector)
+                                        VALUES(:f_id, :w_id, :w_operand, :w_value, :w_connector)');
+                $stmt->bindParam(':f_id', $Field_ID);
+                $stmt->bindParam(':w_id', $New_Where_Field_ID);
+                $stmt->bindParam(':w_operand', $New_Where_Field_Operand);
+                $stmt->bindParam(':w_value', $New_Where_Field_Value);
+                $stmt->bindParam(':w_connector', $New_Where_Field_Connector);
+                for($a=0;$a<$whereCount;++$a)
+                {
+                    if($Where_Field_ID[$a] == '(NONE)')
                     {
-                        $New_Select_Field_ID = $Select_Field_ID[$a];
-                        $New_Display =  $Select_Field_Display[$a];
-                        $stmt->execute();
+                        //skip
+                    }
+                    else
+                    {
+                        $New_Where_Field_ID        = $Where_Field_ID[$a];
+                        $New_Where_Field_Operand   = $Where_Field_Operand[$a];
+                        $New_Where_Field_Value     = $Where_Field_Value[$a];
+                        $New_Where_Field_Connector = $Where_Field_Connector[$a];
+                        $stmt->execute() or die("Failed creating WHERE clause for drop-down field.");
                     }
                 }
-                else die($stmt->error);
-
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("INSERT INTO table_fields_list_source_where(Field_ID, Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector) VALUES(?,?,?,?,?)"))
-                {
-                    $stmt->bind_param("sssss", $Field_ID, $New_Where_Field_ID, $New_Where_Field_Operand, $New_Where_Field_Value, $New_Where_Field_Connector);
-                    for($a=0;$a<$whereCount;++$a)
-                    {
-                        if($Where_Field_ID[$a] == '(NONE)')
-                        {
-                            //skip
-                        }
-                        else
-                        {
-                            $New_Where_Field_ID = $Where_Field_ID[$a];
-                            $New_Where_Field_Operand = $Where_Field_Operand[$a];
-                            $New_Where_Field_Value = $Where_Field_Value[$a];
-                            $New_Where_Field_Connector = $Where_Field_Connector[$a];
-                            $stmt->execute();
-                        }
-                    }
-                }
-                else die($stmt->error);
             }
         }
         $stmt->close();
@@ -400,7 +361,7 @@ function queryDefineTableField()
 
 function queryDefineTableRelation($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
@@ -411,79 +372,71 @@ function queryDefineTableRelation($param)
     $Relation_ID = get_token();
 
     //Create relation label.
-    $result = $mysqli->query("SELECT a.Table_Name FROM `table` a, `table_fields` b WHERE a.Table_ID=b.Table_ID AND b.Field_ID='$Parent_Field_ID'");
-    $data = $result->fetch_assoc();
-    $result->close();
-    $Label = $data['Table_Name'] . "=>";
+    $Label = $d->querySingle("SELECT a.Table_Name FROM \"table\" a, table_fields b WHERE a.Table_ID=b.Table_ID AND b.Field_ID='$Parent_Field_ID'");
+    $Label .= "=>";
 
-    $result = $mysqli->query("SELECT a.Table_Name FROM `table` a, `table_fields` b WHERE a.Table_ID=b.Table_ID AND b.Field_ID='$Child_Field_ID'");
-    $data = $result->fetch_assoc();
-    $result->close();
-    $Label .= $data['Table_Name'];
+    $Label .= $d->querySingle("SELECT a.Table_Name FROM \"table\" a, table_fields b WHERE a.Table_ID=b.Table_ID AND b.Field_ID='$Child_Field_ID'");
 
-    $stmt = $mysqli->stmt_init();
-
-    if($stmt->prepare("INSERT INTO table_relations(Relation_ID, Project_ID, Relation,
-                                                   Parent_Field_ID, Child_Field_ID, Label, Child_Field_Subtext) VALUES(?,?,?,?,?,?,?)"))
-    {
-        $stmt->bind_param("sssssss", $Relation_ID, $Project_ID, $Relation,
-                                     $Parent_Field_ID, $Child_Field_ID, $Label, $Child_Field_Subtext);
-
-        $Project_ID = $_SESSION['Project_ID'];
-
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare('INSERT INTO table_relations(Relation_ID, Project_ID, Relation,
+                                Parent_Field_ID, Child_Field_ID, Label, Child_Field_Subtext)
+                            VALUES(:r_id, :p_id, :rel, :parent, :child, :label, :subtext)');
+    $stmt->bindValue(':r_id', $Relation_ID);
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $stmt->bindValue(':rel', $Relation);
+    $stmt->bindValue(':parent', $Parent_Field_ID);
+    $stmt->bindValue(':child', $Child_Field_ID);
+    $stmt->bindValue(':label', $Label);
+    $stmt->bindValue(':subtext', $Child_Field_Subtext);
+    $stmt->execute() or die("Busted: Failed to create relationship.");
 
     //****************************************************************************************************
     //If this is a ONE-to-ONE relationship, we have to update the child field to reflect the relationship.
     if($Relation == 'ONE-to-ONE')
     {
-        $mysqli = connect_DB();
         //Attribute should be foreign key, or primary&foreign key if previously a primary key or primary&foreign key
-        $mysqli->query("UPDATE table_fields SET Attribute='foreign key' WHERE Field_ID='$Child_Field_ID' AND (Attribute != 'primary key' AND Attribute != 'primary&foreign key')");
-        $mysqli->query("UPDATE table_fields SET Attribute='primary&foreign key' WHERE Field_ID='$Child_Field_ID' AND (Attribute='primary key' OR Attribute='primary&foreign key')");
+        $d->exec("UPDATE table_fields SET Attribute='foreign key' WHERE Field_ID='$Child_Field_ID' AND (Attribute != 'primary key' AND Attribute != 'primary&foreign key')");
+        $d->exec("UPDATE table_fields SET Attribute='primary&foreign key' WHERE Field_ID='$Child_Field_ID' AND (Attribute='primary key' OR Attribute='primary&foreign key')");
 
         //Control type should be "Drop-down List".
-        $mysqli->query("UPDATE table_fields SET Control_Type='drop-down list' WHERE Field_ID='$Child_Field_ID'");
+        $d->exec("UPDATE table_fields SET Control_Type='drop-down list' WHERE Field_ID='$Child_Field_ID'");
 
         //Make sure to delete any existing records in the predefined list table (`table_fields_list`) so that
         //we're sure the list source is not a predefined list, and then also clear the "select" and "where" clause
         //tables to make sure we start from scratch later (`table_fields_list_source_select` and `table_fields_list_source_where`).
-        $mysqli->query("DELETE FROM table_fields_list WHERE Field_ID='$Child_Field_ID'");
-        $mysqli->query("DELETE FROM table_fields_list_source_select WHERE Field_ID='$Child_Field_ID'");
-        $mysqli->query("DELETE FROM table_fields_list_source_where WHERE Field_ID='$Child_Field_ID'");
+        $d->exec("DELETE FROM table_fields_list WHERE Field_ID='$Child_Field_ID'");
+        $d->exec("DELETE FROM table_fields_list_source_select WHERE Field_ID='$Child_Field_ID'");
+        $d->exec("DELETE FROM table_fields_list_source_where WHERE Field_ID='$Child_Field_ID'");
 
         //Label: If it ends with " id" or " code", just trim that part
         //(The rationale for this is: the child field label may be "employee id" or "item code" (or whatever), but what
         //we are actually displaying now courtesy of the 1-1 relationship is actually the employee name or item name,
         //so we just do the developer a service by making the label "employee" or "item" instead of "employee id" or
         //"item code")
-        $result = $mysqli->query("SELECT `Label` FROM table_fields WHERE Field_ID='$Child_Field_ID'");
-        $data = $result->fetch_row();
-        $label = $data[0];
+        $orig_label = $d->querySingle("SELECT Label FROM table_fields WHERE Field_ID='$Child_Field_ID'");
+        $label = $orig_label;
         if(strtoupper(substr($label,-3, 3)) == ' ID') $label = substr($label, 0, strlen($label) -3);
         elseif(strtoupper(substr($label,-5, 5)) == ' CODE') $label = substr($label, 0, strlen($label) -5);
 
-        if($label != $data[0])
-            $mysqli->query("UPDATE table_fields SET `Label`='$label' WHERE Field_ID='$Child_Field_ID'");
+        if($label != $orig_label)
+        {
+            $d->exec("UPDATE table_fields SET Label='$label' WHERE Field_ID='$Child_Field_ID'");
+        }
 
         //List Source Select: the link field (of the parent) serves as NO, while all the child field subtext entries
         //(which are also parent fields) are all YES (we're talking about Display)
         //Preliminary step: Before we can get the Field_ID of the child fields, we need the table ID (of the parent, not the child)
         //so we can match the child field subtext entries with the field names in the correct table
-        $result = $mysqli->query("SELECT `Table_ID` FROM `table_fields` WHERE Field_ID='$Parent_Field_ID'");
-        $data = $result->fetch_row();
-        $Table_ID = $data[0];
+        $Table_ID = $d->querySingle("SELECT Table_ID FROM table_fields WHERE Field_ID='$Parent_Field_ID'");
 
-        $stmt = $mysqli->stmt_init();
-        $stmt->prepare("INSERT INTO table_fields_list_source_select(Field_ID, Select_Field_ID, Display) VALUES(?,?,?)");
-        $stmt->bind_param("sss", $Field_ID, $Select_Field_ID, $Display);
+        $stmt = $d->prepare("INSERT INTO table_fields_list_source_select(Field_ID, Select_Field_ID, Display)
+                                VALUES(:f_id, :s_id, :display)");
         $Field_ID = $Child_Field_ID;
         $Select_Field_ID = $Parent_Field_ID;
         $Display = 'No';
-        $stmt->execute();
+        $stmt->bindParam(':f_id', $Field_ID);
+        $stmt->bindParam(':s_id', $Select_Field_ID);
+        $stmt->bindParam(':display', $Display);
+        $stmt->execute() or die("Failed to insert list source value.");
 
         $cntr=0;
         $Subtext = explode(',', $Child_Field_Subtext);
@@ -491,13 +444,7 @@ function queryDefineTableRelation($param)
         {
             ++$cntr;
             $child_field = trim($child_field);
-            $datacon = connect_DB();
-            $result = $datacon->query("SELECT `Field_ID` FROM `table_fields` WHERE `Table_ID`='$Table_ID' AND Field_Name='$child_field'");
-            $data = $result->fetch_row();
-            $result->close();
-            $datacon->close();
-            $Subtext_Field_ID = $data[0];
-
+            $Subtext_Field_ID = $d->querySingle("SELECT Field_ID FROM table_fields WHERE Table_ID='$Table_ID' AND Field_Name='$child_field'");
             $Field_ID = $Child_Field_ID;
             $Select_Field_ID = $Subtext_Field_ID;
             $Display = 'Yes';
@@ -506,8 +453,7 @@ function queryDefineTableRelation($param)
         $stmt->close();
 
         //List Source Where: none (0 for where_field_ID, blanks for all other fields)
-        $mysqli->query("INSERT INTO table_fields_list_source_where(Field_ID, Where_Field_ID) VALUES ('$Child_Field_ID','0')");
-        $mysqli->close();
+        $d->exec("INSERT INTO table_fields_list_source_where(Field_ID, Where_Field_ID) VALUES ('$Child_Field_ID','0')");
     }
 
 
@@ -515,279 +461,184 @@ function queryDefineTableRelation($param)
     //If this is a ONE-to-MANY relationship, we have to update the child field to reflect the relationship.
     if($Relation == 'ONE-to-MANY')
     {
-        $mysqli = connect_DB();
         //Attribute should be foreign key, or primary&foreign key if previously a primary key
-        $mysqli->query("UPDATE table_fields SET Attribute='foreign key' WHERE Field_ID='$Child_Field_ID' AND Attribute != 'primary key'");
-        $mysqli->query("UPDATE table_fields SET Attribute='primary&foreign key' WHERE Field_ID='$Child_Field_ID' AND Attribute='primary key'");
-        $mysqli->close();
+        $d->exec("UPDATE table_fields SET Attribute='foreign key' WHERE Field_ID='$Child_Field_ID' AND Attribute != 'primary key'");
+        $d->exec("UPDATE table_fields SET Attribute='primary&foreign key' WHERE Field_ID='$Child_Field_ID' AND Attribute='primary key'");
     }
 }
 
 function queryDeleteDBConnection($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM database_connection WHERE DB_Connection_ID=?"))
-    {
-        $stmt->bind_param("s", $DB_Connection_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-    $stmt->close();
+    $stmt = $d->prepare("DELETE FROM database_connection WHERE DB_Connection_ID=:db_id");
+    $stmt->bindValue(':db_id', $DB_Connection_ID);
+    $stmt->execute() or die("Failed to delete database connection.");
 
     //Check if this connection is the chosen default connection. If so, reset the Database_Connection_ID field in Project table to 0.
-    $mysqli->real_query("SELECT Database_Connection_ID FROM project WHERE Project_ID='$_SESSION[Project_ID]' AND Database_Connection_ID='$DB_Connection_ID'");
-    if($result = $mysqli->use_result())
-    {
-        while($row = $result->fetch_assoc())
-        {
-            //whistle a happy tune with your hands in your pockets, nothing to do here
-        }
-        $num_rows = $result->num_rows;
-        $result->close();
-    }
-
-    if($num_rows == 1)
+    $temp_id = $d->querySingle("SELECT Database_Connection_ID FROM project WHERE Project_ID='$_SESSION[Project_ID]' AND Database_Connection_ID='$DB_Connection_ID'");
+    if($temp_id == $DB_Connection_ID)
     {
         //Deleted connection was indeed the default connection of the project
-        $mysqli->real_query("UPDATE project SET Database_Connection_ID='0' WHERE Project_ID='$_SESSION[Project_ID]'");
+        $d->exec("UPDATE project SET Database_Connection_ID='0' WHERE Project_ID='$_SESSION[Project_ID]'");
     }
-
-    $mysqli->close();
 }
 
 function queryDeletePage($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM page WHERE Page_ID=?"))
-    {
-        $stmt->bind_param("s", $Page_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("DELETE FROM page WHERE Page_ID=:p_id");
+    $stmt->bindValue(':p_id', $Page_ID);
+    $stmt->execute() or die("Failed to delete page.");
 }
 
 function queryDeletePredefinedList($param)
 {
-    $mysqli = connect_DB();
-
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM table_fields_predefined_list WHERE List_ID=?"))
-    {
-        $stmt->bind_param("s", $List_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $d = connect_DB();
+    $stmt = $d->prepare("DELETE FROM table_fields_predefined_list WHERE List_ID=:l_id");
+    $stmt->bindValue(':l_id', $List_ID);
+    $stmt->execute() or die("Failed to delete list header.");
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM table_fields_predefined_list_items WHERE List_ID=?"))
-    {
-        $stmt->bind_param("s", $List_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-    }
-
-function queryDeleteTable($param, $mysqli='')
-{
-    if($mysqli==='')
-    {
-        $mysqli = connect_DB();
-    }
-
-    recursive_trim($param);
-    extract($param);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table` WHERE Table_ID=?"))
-    {
-        $stmt->bind_param("s", $Table_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM table_pages WHERE Table_ID=?"))
-    {
-        $stmt->bind_param("s", $Table_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $mysqli->real_query("SELECT Field_ID
-                            FROM `table_fields`
-                            WHERE Table_ID='$Table_ID'");
-    if($result = $mysqli->use_result())
-    {
-        $mysqli2 = connect_DB();
-        while($data = $result->fetch_assoc())
-        {
-            queryDeleteTableField($data, $mysqli2);
-        }
-    }
-    else die($mysqli->error);
-    $result->close();
+    $stmt = $d->prepare("DELETE FROM table_fields_predefined_list_items WHERE List_ID=:l_id");
+    $stmt->bindValue(':l_id', $List_ID);
+    $stmt->execute() or die("Failed to delete list items.");
 }
 
+//FIXME: needs testing
+function queryDeleteTable($param)
+{
+    recursive_trim($param);
+    extract($param);
+
+    $d = connect_DB();
+    $d->exec("PRAGMA synchronous = OFF");
+    $stmt = $d->prepare("DELETE FROM \"table\" WHERE Table_ID=:t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->execute() or die("Failed to delete table.");
+
+    $stmt = $d->prepare("DELETE FROM table_pages WHERE Table_ID=:t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->execute() or die("Failed to delete table pages.");
+    $stmt->close();
+
+
+    $result = $d->query("SELECT Field_ID
+                            FROM table_fields
+                            WHERE Table_ID='$Table_ID'");
+
+    $data = array();
+    while($row = $result->fetchArray())
+    {
+        $data[] = array('Field_ID'=>$row[0]);
+    }
+
+    foreach($data as $row_data)
+    {
+        queryDeleteTableField($row_data);
+    }
+}
+
+function queryDeleteTableField($param)
+{
+    recursive_trim($param);
+    extract($param);
+
+    $d = connect_DB();
+    $d->exec("PRAGMA synchronous = OFF"); //Without this, SQLite3 will take a long time to delete several fields because it keeps pausing to wait for the OS
+    $stmt = $d->prepare('DELETE FROM table_fields WHERE Field_ID=:f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    $stmt->execute() or die("Failed to delete field.");
+
+    $stmt = $d->prepare('DELETE FROM table_fields_list WHERE Field_ID=:f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    $stmt->execute() or die("Failed to delete field list.");
+
+    $stmt = $d->prepare('DELETE FROM table_fields_list_source_select WHERE Field_ID=:f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    $stmt->execute() or die("Failed to delete field select clause.");
+
+    $stmt = $d->prepare('DELETE FROM table_fields_list_source_where WHERE Field_ID=:f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    $stmt->execute() or die("Failed to delete field where clause.");
+
+    $stmt = $d->prepare('DELETE FROM table_relations WHERE Parent_Field_ID=:p_id OR Child_Field_ID=:c_id');
+    $stmt->bindValue(':p_id', $Field_ID);
+    $stmt->bindValue(':c_id', $Field_ID);
+    $stmt->execute() or die("Failed to delete relations.");
+}
+
+//FIXME: needs testing
 function queryDeleteTableRelation($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
     rollback_field_from_relationship($Relation_ID);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_relations` WHERE Relation_ID=?"))
-    {
-        $stmt->bind_param("s", $Relation_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("DELETE FROM `table_relations` WHERE Relation_ID=:r_id");
+    $stmt->bindValue(':r_id', $Relation_ID);
+    $stmt->execute() or die("Failed to delete relationship.");
 }
 
-function queryDeleteTableField($param, $mysqli='')
-{
-    if($mysqli==='')
-    {
-        $mysqli = connect_DB();
-    }
-
-    recursive_trim($param);
-    extract($param);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields_list` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields_book_list` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields_list_source_select` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields_list_source_where` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields_secondary_validation` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_relations` WHERE Parent_Field_ID=? OR Child_Field_ID=?"))
-    {
-        $stmt->bind_param("ss", $Field_ID, $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-}
-
-function queryDeleteProject($param, $mysqli)
+//FIXME: needs testing
+function queryDeleteProject($param)
 {
     recursive_trim($param);
     extract($param);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `project` WHERE Project_ID=?"))
-    {
-        $stmt->bind_param("s", $Project_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $d = connect_DB();
+    $stmt = $d->prepare("DELETE FROM project WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $Project_ID);
+    $stmt->execute() or die("Failed to delete project.");
+    $stmt->close();
 
     //Delete all tables and fields, including all stuff related to those tables and fields
     //(table relations, field list sources, etc)
-    $mysqli->real_query("SELECT `Table_ID`
-                            FROM `table`
-                            WHERE `Project_ID`='$Project_ID'");
-    if($result = $mysqli->use_result())
+    $stmt = $d->prepare("SELECT Table_ID FROM \"table\" WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $Project_ID);
+    $result = $stmt->execute();
+    $arrResult = array();
+    while($row = $result->fetchArray())
     {
-        $mysqli2 = connect_DB();
-        while($data = $result->fetch_assoc()) queryDeleteTable($data, $mysqli2);
+        $arrResult[] = $row['Table_ID'];
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
+
+    foreach($arrResult as $table_id)
+    {
+        queryDeleteTable(array('Table_ID'=>$table_id));
+    }
 
     //Delete all predefined lists
-    $mysqli->real_query("SELECT `List_ID`
-                            FROM `table_fields_predefined_list`
-                            WHERE `Project_ID`='$Project_ID'");
-    if($result = $mysqli->use_result())
+    $result = $d->query("SELECT List_ID
+                            FROM table_fields_predefined_list
+                            WHERE Project_ID='$Project_ID'");
+    $arrResult = array();
+    while($row = $result->fetchArray())
     {
-        while($data = $result->fetch_assoc()) queryDeletePredefinedList($data);
+        $arrResult[] = $row['List_ID'];
     }
-    else die($mysqli->error);
-    $result->close();
 
+    foreach($arrResult as $list_id)
+    {
+            queryDeletePredefinedList(array('List_ID'=>$list_id));
+    }
 
     //Delete all database connections
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM database_connection WHERE Project_ID=?"))
-    {
-        $stmt->bind_param("s", $Project_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("DELETE FROM database_connection WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $Project_ID);
+    $stmt->execute() or die("Failed to delete database connections of the project.");
 
     unset($_SESSION['Project_ID']);
     unset($_SESSION['Project_Name']);
@@ -795,228 +646,215 @@ function queryDeleteProject($param, $mysqli)
 
 function queryUpdateDBConnection($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE database_connection
-                        SET `DB_Connection_Name` = ?,
-                            `Hostname` = ?,
-                            `Username` = ?,
-                            `Password` = ?,
-                            `Database` = ?
-                        WHERE DB_Connection_ID=?"))
-    {
-        $stmt->bind_param("ssssss", $DB_Connection_Name, $Hostname, $Username, $Password, $Database, $Orig_DB_Connection_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE database_connection
+                            SET `DB_Connection_Name` = :db_name,
+                                `Hostname` = :host,
+                                `Username` = :user,
+                                `Password` = :pass,
+                                `Database` = :database
+                            WHERE DB_Connection_ID = :db_id");
+    $stmt->bindValue(':db_name', $DB_Connection_Name);
+    $stmt->bindValue(':host', $Hostname);
+    $stmt->bindValue(':user', $Username);
+    $stmt->bindValue(':pass', $Password);
+    $stmt->bindValue(':database', $Database);
+    $stmt->bindValue(':db_id', $Orig_DB_Connection_ID);
+    $stmt->execute() or die("Failed to update database connection.");
+
 
     if($Default_Connection == 'Yes')
     {
-        $stmt = $mysqli->stmt_init();
-        if($stmt->prepare("UPDATE `project` SET Database_Connection_ID = ? WHERE Project_ID = ?"))
-        {
-            $stmt->bind_param("ss", $Orig_DB_Connection_ID, $_SESSION['Project_ID']);
-            $stmt->execute();
-            $stmt->close();
-        }
-        else die($stmt->error);
+        $stmt = $d->prepare("UPDATE `project` SET Database_Connection_ID = :db_id WHERE Project_ID = :p_id");
+        $stmt->bindValue(':db_id', $Orig_DB_Connection_ID);
+        $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+        $stmt->execute() or die("Failed to update project's default database.");
     }
 }
 
 function queryUpdatePage($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE page
-                        SET `Page_Name` = ?,
-                            `Generator` = ?,
-                            `Description` = ?
-                        WHERE Page_ID=?"))
-    {
-        $stmt->bind_param("ssss", $Page_Name, $Generator, $Description, $Orig_Page_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE page
+                            SET `Page_Name` = :p_name,
+                                `Generator` = :gen,
+                                `Description` = :description
+                            WHERE Page_ID=:p_id");
+    $stmt->bindValue(':p_name', $Page_Name);
+    $stmt->bindValue(':gen', $Generator);
+    $stmt->bindValue(':description', $Description);
+    $stmt->bindValue(':p_id', $Orig_Page_ID);
+    $stmt->execute() or die("Failed to update page generator.");
 }
 
 function queryUpdatePredefinedList($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE table_fields_predefined_list
-                        SET `List_Name` = ?,
-                            `Remarks` = ?
-                        WHERE List_ID=?"))
+    $stmt = $d->prepare("UPDATE table_fields_predefined_list
+                        SET `List_Name` = :l_name,
+                            `Remarks`   = :remarks
+                        WHERE List_ID   = :l_id");
+    $stmt->bindValue(':l_name',$List_Name);
+    $stmt->bindValue(':remarks',$Remarks);
+    $stmt->bindValue(':l_id',$Orig_List_ID);
+    $stmt->execute() or die("Failed to update predefined list header.");
+
+    $stmt = $d->prepare("DELETE FROM table_fields_predefined_list_items WHERE List_ID=:l_id");
+    $stmt->bindValue('l_id', $Orig_List_ID);
+    $stmt->execute() or die("Failed to delete old list items.");
+
+    $stmt = $d->prepare("INSERT INTO table_fields_predefined_list_items(`List_ID`, `Number`, `List_Item`)
+                            VALUES(:l_id, :num, :l_item)");
+    $stmt->bindParam(':l_id', $Orig_List_ID);
+    $stmt->bindParam(':num', $Number);
+    $stmt->bindParam(':l_item', $New_Item);
+    for($a=0;$a<$particularsCount;++$a)
     {
-        $stmt->bind_param("sss", $List_Name, $Remarks, $Orig_List_ID);
-        $stmt->execute();
-        $stmt->close();
+        $Number = $a+1;
+        $New_Item = $List_Item[$a];
+        $stmt->execute() or die("Failed to insert list item, #" . $Number);
     }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM table_fields_predefined_list_items WHERE List_ID=?"))
-    {
-        $stmt->bind_param("s", $Orig_List_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $mysqli->query("OPTIMIZE TABLE `table_fields_predefined_list_items` ");
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_fields_predefined_list_items(`List_ID`, `Number`, `List_Item`) VALUES(?,?,?)"))
-    {
-        $stmt->bind_param("sis", $Orig_List_ID, $Number, $New_Item);
-
-        for($a=0;$a<$particularsCount;++$a)
-        {
-            $Number = $a+1;
-            $New_Item = $List_Item[$a];
-            $stmt->execute();
-        }
-        $stmt->close();
-    }
-    else die($stmt->error);
 }
 
 function queryUpdateProject($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE `project`
-                        SET `Project_Name` = ?,
-                            `Client_Name` = ?,
-                            `Project_Description` = ?,
-                            `Base_Directory` = ?,
-                            `Database_Connection_ID` = ?
-                        WHERE Project_ID=?"))
-    {
-        $stmt->bind_param("ssssss", $Project_Name, $Client_Name, $Project_Description, $Base_Directory, $Database_Connection_ID, $Orig_Project_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE `project`
+                        SET `Project_Name` = :p_name,
+                            `Client_Name` = :c_name,
+                            `Project_Description` = :p_desc,
+                            `Base_Directory` = :base_dir,
+                            `Database_Connection_ID` = :db_con_id
+                        WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_name', $Project_Name);
+    $stmt->bindValue(':c_name', $Client_Name);
+    $stmt->bindValue(':p_desc', $Project_Description);
+    $stmt->bindValue(':base_dir', $Base_Directory);
+    $stmt->bindValue(':db_con_id', $Database_Connection_ID);
+    $stmt->bindValue(':p_id', $Orig_Project_ID);
+    $stmt->execute() or die("Failed to update project information.");
 
     $_SESSION['Project_Name'] = $Project_Name;
 }
 
 function queryUpdateTable($param)
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($param);
     extract($param);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE `table`
-                        SET `DB_Connection_ID` = ?,
-                            `Table_Name` = ?,
-                            `Remarks` = ?
-                        WHERE Table_ID=?"))
-    {
-        $stmt->bind_param("ssss", $DB_Connection_ID, $Table_Name, $Remarks, $Table_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE `table`
+                            SET `DB_Connection_ID` = :db_con_id,
+                                `Table_Name` = :t_name,
+                                `Remarks` = :remarks
+                            WHERE Table_ID=:t_id");
+    $stmt->bindValue(':db_con_id', $DB_Connection_ID);
+    $stmt->bindValue(':t_name', $Table_Name);
+    $stmt->bindValue(':remarks', $Remarks);
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->execute() or die ("Failed to update table information.");
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_pages` WHERE Table_ID=?"))
-    {
-        $stmt->bind_param("s", $Table_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("DELETE FROM `table_pages` WHERE Table_ID=:t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->execute() or die("Failed to delete table pages.");
 
     $numPages = count($Page_ID);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO `table_pages` (Table_ID, Page_ID, Path_Filename) VALUES(?,?,?)"))
+    $stmt = $d->prepare("INSERT INTO `table_pages` (Table_ID, Page_ID, Path_Filename) VALUES(:t_id, :p_id, :fname)");
+    $stmt->bindParam(':t_id', $Table_ID);
+    $stmt->bindParam(':p_id', $New_Page_ID);
+    $stmt->bindParam(':fname', $New_Path_Filename);
+    for($a=0;$a<$numPages;++$a)
     {
-        $stmt->bind_param("sss", $Table_ID, $New_Page_ID, $New_Path_Filename);
-
-        for($a=0;$a<$numPages;++$a)
-        {
-            $New_Page_ID = $Page_ID[$a];
-            $New_Path_Filename = trim($Path_Filename[$a]);
-            $stmt->execute();
-        }
-        $stmt->close();
+        $New_Page_ID = $Page_ID[$a];
+        $New_Path_Filename = trim($Path_Filename[$a]);
+        $stmt->execute() or die("Failed to insert table page ($New_Path_Filname)");
     }
-    else die($stmt->error);
+    $stmt->close();
 }
 
 function queryUpdateTableField()
 {
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     recursive_trim($_POST);
     extract($_POST);
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE `table_fields`
-                        SET `Table_ID` = ?,
-                            `Field_Name` = ?,
-                            `Data_Type` = ?,
-                            `Nullable` = ?,
-                            `Length`= ?,
-                            `Attribute`= ?,
-                            `Control_Type`= ?,
-                            `Label`= ?,
-                            `In_Listview`= ?
-                        WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("ssssisssss", $Table_ID, $Field_Name, $Data_Type, $Nullable, $Length, $Attribute, $Control_Type, $Label, $In_Listview, $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("DELETE FROM `table_fields_secondary_validation` WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("s", $Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
-
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("INSERT INTO table_fields_secondary_validation(Field_ID, Validation_Routine) VALUES(?,?)"))
-    {
-        $stmt->bind_param("ss", $Field_ID, $New_Validation_Routine);
-        for($a=0;$a<$particularsCount;++$a)
-        {
-            if($particularsCount > 1 && trim($Validation_Routine[0])!= "")
-            {
-                $New_Validation_Routine = $Validation_Routine[$a];
-                $stmt->execute();
-            }
-        }
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE `table_fields`
+                            SET `Table_ID` = :t_id,
+                                `Field_Name` = :f_name,
+                                `Data_Type` = :d_type,
+                                `Nullable` = :nullable,
+                                `Length`= :length,
+                                `Attribute`= :attrib,
+                                `Control_Type`= :c_type,
+                                `Label`= :label,
+                                `In_Listview`= :in_lv,
+                                `Auto_Increment`= :auto,
+                                `Default_Value`= :def_val,
+                                `Required`= :req,
+                                `Size`= :size,
+                                `Extra`= :extra,
+                                `Companion`= :companion,
+                                `Char_Set_Method`= :char_sm,
+                                `Char_Set_Allow_Space`= :char_sas,
+                                `Extra_Chars_Allowed`= :extra_ca,
+                                `Allow_HTML_Tags`= :a_html_t,
+                                `Trim_Value`= :trim_val,
+                                `Valid_Set`= :v_set,
+                                `Date_Default`= :date_def,
+                                `Drop_Down_Has_Blank`= :ddhb,
+                                `RPT_In_Report`= :rpt_ir,
+                                `RPT_Column_Format`= :rpt_cf,
+                                `RPT_Column_Alignment`= :rpt_ca,
+                                `RPT_Show_Sum`= :rpt_ss
+                            WHERE Field_ID=:f_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->bindValue(':f_name', $Field_Name);
+    $stmt->bindValue(':d_type', $Data_Type);
+    $stmt->bindValue(':nullable', $Nullable);
+    $stmt->bindValue(':length', $Length);
+    $stmt->bindValue(':attrib', $Attribute);
+    $stmt->bindValue(':c_type', $Control_Type);
+    $stmt->bindValue(':label', $Label);
+    $stmt->bindValue(':auto', $Auto_Increment);
+    $stmt->bindValue(':in_lv', $In_Listview);
+    $stmt->bindValue(':def_val', $Default_Value);
+    $stmt->bindValue(':req', $Required);
+    $stmt->bindValue(':size', $Size);
+    $stmt->bindValue(':extra', $Extra);
+    $stmt->bindValue(':companion', $Companion);
+    $stmt->bindValue(':char_sm', $Char_Set_Method);
+    $stmt->bindValue(':char_sas', $Char_Set_Allow_Space);
+    $stmt->bindValue(':extra_ca', $Extra_Chars_Allowed);
+    $stmt->bindValue(':a_html_t', $Allow_HTML_Tags);
+    $stmt->bindValue(':trim_val', $Trim_Value);
+    $stmt->bindValue(':v_set', $Valid_Set);
+    $stmt->bindValue(':date_def', $Date_Default);
+    $stmt->bindValue(':ddhb', $Drop_Down_Has_Blank);
+    $stmt->bindValue(':rpt_ir', $RPT_In_Report);
+    $stmt->bindValue(':rpt_cf', $RPT_Column_Format);
+    $stmt->bindValue(':rpt_ca', $RPT_Column_Alignment);
+    $stmt->bindValue(':rpt_ss', $RPT_Show_Sum);
+    $stmt->bindValue(':f_id', $Field_ID);
+    $stmt->execute() or die("Failed to update table header info.");
 
     if($Control_Type != "textbox" &&
        $Control_Type != "textarea" &&
@@ -1024,116 +862,73 @@ function queryUpdateTableField()
        $Control_Type != "none" &&
        $Control_Type != "date controls")
     {
-        if($Control_Type=="special textbox")
+        if($Control_Type=="radio buttons")
         {
-            $stmt = $mysqli->stmt_init();
-            if($stmt->prepare("DELETE FROM `table_fields_book_list` WHERE Field_ID=?"))
-            {
-                $stmt->bind_param("s", $Field_ID);
-                $stmt->execute();
-            }
-            else die($stmt->error);
+            $stmt = $d->prepare("DELETE FROM `table_fields_list` WHERE Field_ID=:f_id");
+            $stmt->bindValue(':f_id', $Field_ID);
+            $stmt->execute() or die("Failed to delete old predefined list of the field (radio buttons).");
 
-            $stmt = $mysqli->stmt_init();
-            if($stmt->prepare("INSERT INTO table_fields_book_list(Field_ID, Book_List_Generator) VALUES(?,?)"))
-            {
-                $stmt->bind_param("ss", $Field_ID, $Book_List_Generator);
-                $stmt->execute();
-            }
-            else die($stmt->error);
-        }
-        elseif($Control_Type=="radio buttons")
-        {
-            $stmt = $mysqli->stmt_init();
-            if($stmt->prepare("DELETE FROM `table_fields_list` WHERE Field_ID=?"))
-            {
-                $stmt->bind_param("s", $Field_ID);
-                $stmt->execute();
-            }
-            else die($stmt->error);
-
-            $stmt = $mysqli->stmt_init();
-            if($stmt->prepare("INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (?,?)"))
-            {
-                $stmt->bind_param("ss", $Field_ID, $List_ID);
-                $stmt->execute();
-            }
-            else die($stmt->error);
+            $stmt = $d->prepare("INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (:f_id, :l_id)");
+            $stmt->bindValue(':f_id', $Field_ID);
+            $stmt->bindValue(':l_id', $List_ID);
+            $stmt->execute() or die("Failed to insert new predefined list of the field (radio buttons).");
         }
         elseif($Control_Type=="drop-down list")
         {
             if($DropdownType=="Predefined")
             {
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("DELETE FROM `table_fields_list` WHERE Field_ID=?"))
-                {
-                    $stmt->bind_param("s", $Field_ID);
-                    $stmt->execute();
-                }
-                else die($stmt->error);
+                $stmt = $d->prepare("DELETE FROM `table_fields_list` WHERE Field_ID=:f_id");
+                $stmt->bindValue(':f_id', $Field_ID);
+                $stmt->execute() or die("Failed to delete old predefined list of the field (drop-down list).");
 
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (?,?)"))
-                {
-                    $stmt->bind_param("ss", $Field_ID, $List_ID);
-                    $stmt->execute();
-                }
-                else die($stmt->error);
+                $stmt = $d->prepare("INSERT INTO table_fields_list(Field_ID, List_ID) VALUES (:f_id, :l_id)");
+                $stmt->bindValue(':f_id', $Field_ID);
+                $stmt->bindValue(':l_id', $List_ID);
+                $stmt->execute() or die("Failed to insert new predefined list of the field (drop-down list).");
             }
             elseif($DropdownType=="Source")
             {
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("DELETE FROM `table_fields_list_source_select` WHERE Field_ID=?"))
+                $stmt = $d->prepare("DELETE FROM `table_fields_list_source_select` WHERE Field_ID=:f_id");
+                $stmt->bindValue(':f_id', $Field_ID);
+                $stmt->execute() or die("Failed to delete old select clause of SQL-generated list of the field.");
+
+                $stmt = $d->prepare("INSERT INTO table_fields_list_source_select(Field_ID, Select_Field_ID, Display) VALUES(:f_id, :sf_id, :display)");
+                $stmt->bindParam(':f_id', $Field_ID);
+                $stmt->bindParam(':sf_id', $New_Select_Field_ID);
+                $stmt->bindParam(':display', $New_Display);
+                for($a=0;$a<$selectCount;++$a)
                 {
-                    $stmt->bind_param("s", $Field_ID);
-                    $stmt->execute();
+                    $New_Select_Field_ID = $Select_Field_ID[$a];
+                    $New_Display =  $Select_Field_Display[$a];
+                    $stmt->execute() or die("Failed to insert new list_source_select_field, loop #" . ($a+1));
                 }
-                else die($stmt->error);
 
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("INSERT INTO table_fields_list_source_select(Field_ID, Select_Field_ID, Display) VALUES(?,?,?)"))
+                $stmt = $d->prepare("DELETE FROM `table_fields_list_source_where` WHERE Field_ID=:f_id");
+                $stmt->bindValue(':f_id', $Field_ID);
+                $stmt->execute() or die("Failed to delete old where clause of SQL-generated list of the field");
+
+                $stmt = $d->prepare("INSERT INTO table_fields_list_source_where(Field_ID, Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector)
+                                        VALUES(:f_id, :wf_id, :wf_oper, :wf_val, :wf_con)");
+                $stmt->bindParam(':f_id', $Field_ID);
+                $stmt->bindParam(':wf_id', $New_Where_Field_ID);
+                $stmt->bindParam(':wf_oper', $New_Where_Field_Operand);
+                $stmt->bindParam(':wf_val', $New_Where_Field_Value);
+                $stmt->bindParam(':wf_con', $New_Where_Field_Connector);
+                for($a=0;$a<$whereCount;++$a)
                 {
-                    $stmt->bind_param("sss", $Field_ID, $New_Select_Field_ID, $New_Display);
-
-                    for($a=0;$a<$selectCount;++$a)
+                    if($Where_Field_ID[$a] == '(NONE)')
                     {
-                        $New_Select_Field_ID = $Select_Field_ID[$a];
-                        $New_Display =  $Select_Field_Display[$a];
-                        $stmt->execute();
+                        //skip
+                    }
+                    else
+                    {
+                        $New_Where_Field_ID = $Where_Field_ID[$a];
+                        $New_Where_Field_Operand = $Where_Field_Operand[$a];
+                        $New_Where_Field_Value = $Where_Field_Value[$a];
+                        $New_Where_Field_Connector = $Where_Field_Connector[$a];
+                        $stmt->execute() or die("Failed to insert new list_source_where_field, loop $" . ($a+1));
                     }
                 }
-                else die($stmt->error);
-
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("DELETE FROM `table_fields_list_source_where` WHERE Field_ID=?"))
-                {
-                    $stmt->bind_param("s", $Field_ID);
-                    $stmt->execute();
-                }
-                else die($stmt->error);
-
-                $stmt = $mysqli->stmt_init();
-                if($stmt->prepare("INSERT INTO table_fields_list_source_where(Field_ID, Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector) VALUES(?,?,?,?,?)"))
-                {
-                    $stmt->bind_param("sssss", $Field_ID, $New_Where_Field_ID, $New_Where_Field_Operand, $New_Where_Field_Value, $New_Where_Field_Connector);
-
-                    for($a=0;$a<$whereCount;++$a)
-                    {
-                        if($Where_Field_ID[$a] == '(NONE)')
-                        {
-                            //skip
-                        }
-                        else
-                        {
-                            $New_Where_Field_ID = $Where_Field_ID[$a];
-                            $New_Where_Field_Operand = $Where_Field_Operand[$a];
-                            $New_Where_Field_Value = $Where_Field_Value[$a];
-                            $New_Where_Field_Connector = $Where_Field_Connector[$a];
-                            $stmt->execute();
-                        }
-                    }
-                }
-                else die($stmt->error);
             }
         }
         $stmt->close();
@@ -1153,35 +948,19 @@ function rollback_field_from_relationship($Relation_ID)
     //******************************************************************************
     //We have to undo changes in the child field
 
-    $mysqli = connect_DB();
+    $d = connect_DB();
 
     //Get the Child Field involved
-    $mysqli->real_query("SELECT Child_Field_ID
-                            FROM `table_relations`
-                            WHERE Relation_ID='$Relation_ID'");
-    if($result = $mysqli->use_result())
-    {
-        while($data = $result->fetch_assoc())
-        {
-            $Child_Field_ID = $data['Child_Field_ID'];
-        }
-    }
+    $Child_Field_ID = $d->querySingle("SELECT Child_Field_ID FROM `table_relations` WHERE Relation_ID='$Relation_ID'");
 
     //Delete the SQL list settings (for 1-1 relationships)
-    $mysqli->real_query("DELETE FROM table_fields_list_source_select WHERE Field_ID='$Child_Field_ID'");
-    $mysqli->real_query("DELETE FROM table_fields_list_source_where WHERE Field_ID='$Child_Field_ID'");
+    $d->exec("DELETE FROM table_fields_list_source_select WHERE Field_ID='$Child_Field_ID'");
+    $d->exec("DELETE FROM table_fields_list_source_where WHERE Field_ID='$Child_Field_ID'");
 
     //See what the attribute value is.
     //- if "primary&foregin key", change back to "primary".
     //- if "foreign key", change back to "none".
-    $mysqli->real_query("SELECT Attribute FROM table_fields WHERE Field_ID='$Child_Field_ID'");
-    if($result = $mysqli->use_result())
-    {
-        while($data = $result->fetch_assoc())
-        {
-            $Child_Field_Attribute = $data['Attribute'];
-        }
-    }
+    $Child_Field_Attribute = $d->querySingle("SELECT Attribute FROM table_fields WHERE Field_ID='$Child_Field_ID'");
 
     if($Child_Field_Attribute == 'primary&foreign key')
     {
@@ -1192,25 +971,20 @@ function rollback_field_from_relationship($Relation_ID)
         $new_attribute = 'none';
     }
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE table_fields SET Attribute=? WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("ss", $new_attribute, $Child_Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE table_fields SET Attribute=:attrib WHERE Field_ID=:f_id");
+    $stmt->bindValue(':attrib', $new_attribute);
+    $stmt->bindValue(':f_id', $Child_Field_ID);
+    $stmt->execute() or die("Failed to rollback field attribute.");
 
     //After undoing the attribute, we now have to undo the change to the control type (for 1-1 relationships).
     //We need to look at this field's metadata to determine how to roll it back to default
-    $mysqli->real_query("SELECT Field_Name, Data_Type FROM table_fields WHERE Field_ID='$Child_Field_ID'");
-    if($result = $mysqli->use_result())
+    $stmt = $d->prepare("SELECT Field_Name, Data_Type FROM table_fields WHERE Field_ID=:f_id");
+    $stmt->bindValue(':f_id', $Child_Field_ID);
+    $result = $stmt->execute();
+    while($data = $result->fetchArray())
     {
-        while($data = $result->fetch_assoc())
-        {
-            $Child_Field_Name = $data['Field_Name'];
-            $Child_Data_Type  = $data['Data_Type'];
-        }
+        $Child_Field_Name = $data['Field_Name'];
+        $Child_Data_Type  = $data['Data_Type'];
     }
 
     $arr_textarea_names = get_textarea_field_names();
@@ -1222,15 +996,10 @@ function rollback_field_from_relationship($Relation_ID)
     {
         switch($Child_Data_Type)
         {
-            case 'text' : $control_type = 'textarea';
-                            break;
-
-            case 'date' : $control_type = 'date controls';
-                            break;
-
+            case 'text' : $control_type = 'textarea'; break;
+            case 'date' : $control_type = 'date controls'; break;
             default     : $control_type = 'textbox';
         }
-
     }
 
     if(strtoupper($Child_Field_Name) == 'ID')
@@ -1256,17 +1025,14 @@ function rollback_field_from_relationship($Relation_ID)
         }
     }
 
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("UPDATE table_fields SET Control_Type=?, Label=? WHERE Field_ID=?"))
-    {
-        $stmt->bind_param("sss", $control_type, $label, $Child_Field_ID);
-        $stmt->execute();
-        $stmt->close();
-    }
-    else die($stmt->error);
+    $stmt = $d->prepare("UPDATE table_fields SET Control_Type=:c_type, Label=:label WHERE Field_ID=:f_id");
+    $stmt->bindValue(':c_type', $control_type);
+    $stmt->bindValue(':label', $label);
+    $stmt->bindValue(':f_id', $Child_Field_ID);
+    $stmt->execute() or die("Failed to rollback basic field information.");
+
     //******************************************************************************
     //*** END: ROLLBACK OF FIELD INFO UPON REMOVAL OF RELATIONSHIP *****************
     //******************************************************************************
 }
-
 ?>

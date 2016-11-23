@@ -18,23 +18,24 @@ if(xsrf_guard())
     {
         extract($_POST);
     }
-    
+
     if($_POST['btnSubmit'])
     {
         $errMsg = scriptCheckIfNull('List Name', $List_Name,
                                     'Remarks', $Remarks);
-        
+
         for($a=0;$a<$particularsCount;$a++)
         {
             $b = $a + 1;
             $errMsg .= scriptCheckIfNull("List Item #$b", $List_Item[$a]);
         }
 
-        $mysqli = connect_DB();
-        $select = "SELECT `List_ID` FROM `table_fields_predefined_list` WHERE `List_Name`='" . $mysqli->real_escape_string($List_Name)
-                . "' AND `Project_ID`='" . $mysqli->real_escape_string($_SESSION['Project_ID']) . "'"; 
+        $d = connect_DB();
+        $stmt = $d->prepare("SELECT List_ID FROM table_fields_predefined_list WHERE List_Name=:l_name AND Project_ID=:p_id");
+        $stmt->bindValue(':l_name', $List_Name);
+        $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
         $error = "The list name '$List_Name' already exists. Please choose a new one. <br>";
-        $errMsg .= scriptCheckIfUnique($select, $error);
+        $errMsg .= scriptCheckIfUnique($stmt, $error);
 
         if($errMsg=="")
         {

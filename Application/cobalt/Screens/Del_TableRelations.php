@@ -6,42 +6,36 @@ if(isset($_GET['Relation_ID']))
 {
     $Relation_ID = rawurldecode($_GET['Relation_ID']);
 
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Relation_ID, Relation, Label, 
-                                Parent_Field_ID, Child_Field_ID, Child_Field_Subtext  
-                            FROM `table_relations`  
-                            WHERE `Relation_ID`='$Relation_ID'");
-    if($result = $mysqli->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT Relation_ID, Relation, Label, Parent_Field_ID, Child_Field_ID, Child_Field_Subtext
+                            FROM table_relations WHERE Relation_ID=:r_id");
+    $stmt->bindValue(':r_id', $Relation_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
-    $mysqli->close();
-
-    $mysqli = connect_DB();
-    $stmt = $mysqli->stmt_init();
-    if($stmt->prepare("SELECT a.Table_Name, b.Field_Name FROM `table` a, `table_fields` b WHERE a.Table_ID=b.Table_ID AND Field_ID=?"))
+    $stmt = $d->prepare("SELECT a.Table_Name, b.Field_Name FROM \"table\" a, table_fields b WHERE a.Table_ID=b.Table_ID AND Field_ID=:f_id");
+    $stmt->bindParam(":f_id", $Field_ID);
+    $Field_ID = $Parent_Field_ID;
+    $result = $stmt->execute();
+    while($data = $result->fetchArray())
     {
-        $stmt->bind_param("s", $Field_ID);
-        
-        $Field_ID = $Parent_Field_ID;
-        $stmt->execute();
-        $stmt->bind_result($Parent_Table, $Parent_Field);
-        $stmt->fetch();
-
-        $Field_ID = $Child_Field_ID;
-        $stmt->execute();
-        $stmt->bind_result($Child_Table, $Child_Field);
-        $stmt->fetch();
-
-        $Parent = $Parent_Table . '.' . $Parent_Field;
-        $Child = $Child_Table . '.' . $Child_Field;
-
-        $stmt->close();
+        $Parent_Table = $data['Table_Name'];
+        $Parent_Field = $data['Field_Name'];
     }
-    else die("Umm... " . $stmt->error);
-    $mysqli->close();    
+    $result->finalize();
+
+    $Field_ID = $Child_Field_ID;
+    $result = $stmt->execute();
+    while($data = $result->fetchArray())
+    {
+        $Child_Table = $data['Table_Name'];
+        $Child_Field = $data['Field_Name'];
+    }
+
+    $Parent = $Parent_Table . '.' . $Parent_Field;
+    $Child  = $Child_Table . '.' . $Child_Field;
 }
 elseif(xsrf_guard())
 {

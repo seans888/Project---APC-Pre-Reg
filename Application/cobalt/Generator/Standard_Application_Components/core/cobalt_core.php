@@ -13,6 +13,8 @@ function init_cobalt($required_passport=null, $log=TRUE)
     if(DEBUG_MODE)
     {
         require_once 'core_debug.php';
+        error_reporting(E_ALL);
+        ini_set('display_errors', '1');
     }
 
     //Set timezone as specified in global_config
@@ -199,8 +201,7 @@ function log_action($action, $module='')
     $real_time = date("G:i:s");
     $new_date= explode("-", $date);
     $new_time= explode(":", $real_time);
-    $timestamp = mktime($new_time[0],$new_time[1],$new_time[2],$new_date[0],$new_date[1],$new_date[2]);
-    $date_time = date("l, F d, Y -- h:i:s a");
+    $datetime = date('Y-m-d H:i:s');
     $ip_address = get_ip();
     $action = quote_smart($action);
 
@@ -208,7 +209,7 @@ function log_action($action, $module='')
     $data_con->set_query_type('INSERT');
     $data_con->set_table('system_log');
     $data_con->set_fields('ip_address, user, datetime, action, module');
-    $data_con->set_values("'$ip_address', '$username', '$timestamp', '$action', '$module'");
+    $data_con->set_values("'$ip_address', '$username', '$datetime', '$action', '$module'");
     $data_con->make_query(TRUE,FALSE);
 }
 
@@ -283,13 +284,13 @@ function back_quote_smart($var)
 
 function cobalt_htmlentities($unclean, $flag=ENT_QUOTES)
 {
-    $clean = htmlentities($unclean, $flag, MULTI_BYTE_ENCODING);
+    $clean = htmlspecialchars($unclean, $flag, MULTI_BYTE_ENCODING);
     return $clean;
 }
 
 function cobalt_htmlentities_decode($unclean, $flag=ENT_QUOTES)
 {
-    $clean = html_entity_decode($unclean, $flag, MULTI_BYTE_ENCODING);
+    $clean = htmlspecialchars_decode($unclean, $flag, MULTI_BYTE_ENCODING);
     return $clean;
 }
 

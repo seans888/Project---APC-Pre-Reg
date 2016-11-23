@@ -7,12 +7,12 @@ $img_height = '';
 ?>
 
 <div class="container_mid_huge2">
-    <fieldset class="top"> 
+    <fieldset class="top">
         Schema Control
     </fieldset>
     <fieldset class="middle">
-	    <table border=0 width=100%>
-	    <tr>
+        <table border=0 width=100%>
+            <tr>
 		    <td align="center" width="20%">
         		<a href="Screens/ListView_DBConnections.php" class="linkCC"><img height="<?php echo $img_height; ?>" src=/cobalt/images/icons/database.png><br>Database Connections</a>
 		    </td>
@@ -33,10 +33,10 @@ $img_height = '';
     </fieldset>
 </div>
 <div class="container_mid_huge2">
-    <fieldset class="top"> 
+    <fieldset class="top">
         Project Control
     </fieldset>
-    <fieldset class="middle">    
+    <fieldset class="middle">
 	    <table border=0 width=100%>
 	    <tr>
 		    <td align="center" width="20%">

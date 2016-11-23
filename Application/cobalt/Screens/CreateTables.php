@@ -8,34 +8,38 @@ if(xsrf_guard())
     init_var($_POST['btnSubmit']);
     init_var($_POST['particularButton']);
 
-    if($_POST['btnCancel']) 
+    if($_POST['btnCancel'])
     {
         header("location: ListView_Tables.php");
         exit();
     }
-    
+
     if($_POST['btnSubmit'] || $_POST['particularButton'])
     {
         extract($_POST);
     }
-    
+
     if($_POST['btnSubmit'])
     {
         $errMsg = scriptCheckIfNull('DB Connection', $DB_Connection_ID,
                                     'Table Name', $Table_Name);
-        
+
         for($a=0;$a<$particularsCount;$a++)
         {
             $b = $a + 1;
             $errMsg .= scriptCheckIfNull("Table page #$b", $Page_ID[$a]);
             $Path_Filename[$a] = trim($Folder) . '/' . trim(basename($Filename[$a]));
         }
-                                    
+
         if($errMsg=="")
         {
-            $select = "SELECT `Table_Name` FROM `table` WHERE `Table_Name`='$Table_Name' AND `Table_Name`!='$Orig_Table_Name' AND Project_ID='$_SESSION[Project_ID]'"; 
+            $d = connect_DB();
+            $stmt = $d->prepare('SELECT Table_Name FROM "table" WHERE Table_Name=:t_id AND Project_ID=:p_id');
+            $stmt->bindValue(':t_id', $Table_Name);
+            $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+
             $error = "The table name '$Table_Name' already exists. Please choose a new name. <br>";
-            $errMsg = scriptCheckIfUnique($select, $error);
+            $errMsg = scriptCheckIfUnique($stmt, $error);
 
             if($errMsg=="")
             {

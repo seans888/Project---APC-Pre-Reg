@@ -11,10 +11,6 @@ if(xsrf_guard())
     }
 }
 
-$mysqli = connect_DB();
-$Project_ID = $mysqli->real_escape_string($_SESSION['Project_ID']);
-$mysqli->real_query("SELECT List_ID, List_Name, Remarks FROM table_fields_predefined_list WHERE Project_ID='$Project_ID' ORDER BY List_Name");
-
 drawHeader();
 drawPageTitle('List View: Predefined Lists',$errMsg);
 ?>
@@ -27,11 +23,14 @@ drawPageTitle('List View: Predefined Lists',$errMsg);
     <td>Remarks</td>
 </tr>
 <?php
-    if($result = $mysqli->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT List_ID, List_Name, Remarks FROM table_fields_predefined_list WHERE Project_ID=:p_id ORDER BY List_Name");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    if($result = $stmt->execute())
     {
         $a=0;
         $class='';
-        while($row = $result->fetch_assoc())
+        while($row = $result->fetchArray())
         {
             extract($row);
             if($a%2 == 0) $class='listRowEven';
@@ -45,9 +44,7 @@ drawPageTitle('List View: Predefined Lists',$errMsg);
             printf("<td>%s</td><td>%s</td></tr>\n", $row['List_Name'], $row['Remarks']);
             $a++;
         }
-        $result->close();
     }
-    else die($mysqli->error);
 ?>
 </table>
 <?php drawButton('CANCEL');?>

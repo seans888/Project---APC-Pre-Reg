@@ -7,30 +7,27 @@ if(isset($_GET['List_ID']))
     $List_ID = rawurldecode($_GET['List_ID']);
     $Orig_List_ID = $List_ID;
     unset($_GET);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `List_Name`, `Remarks` 
-                            FROM `table_fields_predefined_list` 
-                            WHERE `List_ID`='$List_ID'");
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT List_Name, Remarks FROM table_fields_predefined_list WHERE List_ID=:l_id");
+    $stmt->bindValue(':l_id', $List_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
-    $mysqli->close();
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `List_Item` 
-                            FROM `table_fields_predefined_list_items`
-                            WHERE `List_ID`='$List_ID'
-                            ORDER BY `Number`");
 
-    if($result = $mysqli->store_result())
+    $stmt = $d->prepare("SELECT List_Item FROM table_fields_predefined_list_items WHERE List_ID=:l_id ORDER BY Number");
+    $stmt->bindValue(':l_id', $List_ID);
+    if($result = $stmt->execute())
     {
-        $numParticulars=$result->num_rows;
+        $numParticulars=0;
         $List_Item = array();
-        while($row = $result->fetch_assoc()) $List_Item[] =  $row['List_Item'];
+        while($row = $result->fetchArray())
+        {
+            $List_Item[] =  $row['List_Item'];
+            ++$numParticulars;
+        }
     }
 }
 
@@ -46,31 +43,32 @@ if(xsrf_guard())
         header("location: ListView_PredefinedLists.php");
         exit();
     }
-    
+
     if($_POST['btnSubmit'] || $_POST['particularButton'])
     {
         extract($_POST);
     }
-    
+
     if($_POST['btnSubmit'])
     {
         $errMsg = scriptCheckIfNull('List Name', $List_Name,
                                     'Remarks', $Remarks);
-        
+
         for($a=0;$a<$particularsCount;$a++)
         {
             $b = $a + 1;
             $errMsg .= scriptCheckIfNull("List Item #$b", $List_Item[$a]);
         }
-                                    
+
         if($errMsg=="")
         {
-            $mysqli = connect_DB();
-            $select = "SELECT `List_ID` FROM `table_fields_predefined_list` WHERE `List_Name`='" . $mysqli->real_escape_string($List_Name)
-                    . "' AND `List_ID`!='" . $mysqli->real_escape_string($Orig_List_ID)
-                    . "' AND `Project_ID`='" . $mysqli->real_escape_string($_SESSION['Project_ID']) . "'"; 
+            $d = connect_DB();
+            $stmt = $d->prepare("SELECT List_ID FROM table_fields_predefined_list WHERE List_Name=:l_name AND List_ID != :orig_id AND Project_ID =:p_id");
+            $stmt->bindValue(':l_name', $List_Name);
+            $stmt->bindValue(':orig_id', $Orig_List_ID);
+            $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
             $error = "The list name '$List_Name' already exists. Please choose a new one. <br>";
-            $errMsg = scriptCheckIfUnique($select, $error);
+            $errMsg = scriptCheckIfUnique($stmt, $error);
 
             if($errMsg=="")
             {

@@ -10,6 +10,7 @@ class base_data_abstraction
     var $db_user=DEFAULT_DB_USER;
     var $db_pass=DEFAULT_DB_PASS;
     var $db_use =DEFAULT_DB_USE;
+    var $buffer_results = TRUE;
 
     var $affected_rows='';
     var $auto_id='';
@@ -164,8 +165,16 @@ class base_data_abstraction
         if(strtoupper($this->query_type) == "SELECT")
         {
             $this->error = $this->mysqli->error;
-            $this->result = $this->mysqli->store_result();
-            $this->num_rows = $this->result->num_rows;
+            if($this->buffer_results == TRUE)
+            {
+                $this->result = $this->mysqli->store_result();
+                $this->num_rows = $this->result->num_rows;
+            }
+            else
+            {
+                $this->result = $this->mysqli->use_result();
+                $this->num_rows = 0; //not known until we actually fetch them since this is an unbuffered result
+            }
         }
         elseif(strtoupper($this->query_type) == "INSERT")
         {
@@ -189,16 +198,16 @@ class base_data_abstraction
     {
         $this->make_query(TRUE, $log);
         $result = $this->result;
-        if($result->num_rows > 0)
-        {
-            //Valid types are 'single' and 'array'.
-            //Default is 'array', and for robustness any other value
-            //simply gets treated as 'array';
 
-            //Result = single record, no need for arrays to store the result set
-            if(strtoupper($result_type)=='SINGLE')
+        //Valid types are 'single' and 'array'.
+        //Default is 'array', and for robustness any other value
+        //simply gets treated as 'array';
+
+        //Result = single record, no need for arrays to store the result set
+        if(strtoupper($result_type)=='SINGLE')
+        {
+            if($data = $result->fetch_assoc());
             {
-                $data = $result->fetch_assoc();
                 if(is_array($data))
                 {
                     foreach($data as $key=>$value)
@@ -207,20 +216,19 @@ class base_data_abstraction
                     }
                 }
             }
-            else //Result = multiple records, store in arrays
+        }
+        else //Result = multiple records, store in arrays
+        {
+            while($data = $result->fetch_assoc())
             {
-                for($a=0; $a<$this->num_rows; ++$a)
+                if(is_array($data))
                 {
-                    $data = $result->fetch_assoc();
-                    if(is_array($data))
+                    foreach($data as $key=>$value)
                     {
-                        foreach($data as $key=>$value)
-                        {
-                            init_var($this->dump[$key]);
-                            if(is_array($this->dump[$key])) ;
-                            else $this->dump[$key] = array();
-                            $this->dump[$key][] = $value;
-                        }
+                        init_var($this->dump[$key]);
+                        if(is_array($this->dump[$key])) ;
+                        else $this->dump[$key] = array();
+                        $this->dump[$key][] = $value;
                     }
                 }
             }
@@ -809,9 +817,16 @@ class base_data_abstraction
 
         if($this->query_type == "SELECT")
         {
-            $this->stmt->store_result();
+            if($this->buffer_results == TRUE)
+            {
+                $this->stmt->store_result();
+                $this->num_rows = $this->stmt->num_rows;
+            }
+            else
+            {
+                $this->num_rows = 0; ////not known until we actually fetch them since this is an unbuffered result
+            }
             $this->error = $this->stmt->error;
-            $this->num_rows = $this->stmt->num_rows;
             $log=LOG_SELECT_QUERIES;
         }
         elseif($this->query_type == "INSERT")
@@ -831,64 +846,61 @@ class base_data_abstraction
     function stmt_fetch($result_type='array')
     {
         $this->stmt_execute();
-        if($this->num_rows > 0)
+        $result = $this->stmt;
+        //Valid types are 'single' and 'array'.
+        //Default is 'array', and for robustness any other value
+        //simply gets treated as 'array';
+
+        //Get number of fields
+        $num_fields = $result->field_count;
+
+        //create temporary bind result vars
+        $arr_results = array();
+        for($a=0; $a<$num_fields; ++$a)
         {
-            $result = $this->stmt;
-            //Valid types are 'single' and 'array'.
-            //Default is 'array', and for robustness any other value
-            //simply gets treated as 'array';
+            $var_name = 'col' . $a;
+            $$var_name='';
+            $arr_results[] = &$$var_name;
+        }
+        call_user_func_array(array($this->stmt, 'bind_result'), $arr_results);
 
-            //Get number of fields
-            $num_fields = $result->field_count;
+        //Get the field names
+        $meta = $result->result_metadata();
+        $arr_fieldnames = array();
+        for($a=0; $a<$num_fields; ++$a)
+        {
+            $field = $meta->fetch_field();
+            $arr_fieldnames[] = $field->name;
+        }
 
-            //create temporary bind result vars
-            $arr_results = array();
-            for($a=0; $a<$num_fields; ++$a)
+        //Result = single record, no need for arrays to store the result set
+        if(strtoupper($result_type)=='SINGLE')
+        {
+            $result->fetch();
+            for($b=0; $b<$num_fields; ++$b)
             {
-                $var_name = 'col' . $a;
-                $$var_name='';
-                $arr_results[] = &$$var_name;
+                $field_name = $arr_fieldnames[$b];
+                $value = $arr_results[$b];
+                $this->dump[$field_name] = $value;
             }
-            call_user_func_array(array($this->stmt, 'bind_result'), $arr_results);
-
-            //Get the field names
-            $meta = $result->result_metadata();
-            $arr_fieldnames = array();
-            for($a=0; $a<$num_fields; ++$a)
+        }
+        else //Result = multiple records, store in arrays
+        {
+            while($result->fetch())
             {
-                $field = $meta->fetch_field();
-                $arr_fieldnames[] = $field->name;
-            }
-
-            //Result = single record, no need for arrays to store the result set
-            if(strtoupper($result_type)=='SINGLE')
-            {
-                $result->fetch();
                 for($b=0; $b<$num_fields; ++$b)
                 {
                     $field_name = $arr_fieldnames[$b];
                     $value = $arr_results[$b];
-                    $this->dump[$field_name] = $value;
-                }
-            }
-            else //Result = multiple records, store in arrays
-            {
-                for($a=0; $a<$this->num_rows; ++$a)
-                {
-                    $result->fetch();
-                    for($b=0; $b<$num_fields; ++$b)
-                    {
-                        $field_name = $arr_fieldnames[$b];
-                        $value = $arr_results[$b];
 
-                        init_var($this->dump[$field_name]);
-                        if(is_array($this->dump[$field_name])) ;
-                        else $this->dump[$field_name] = array();
-                        $this->dump[$field_name][] = $value;
-                    }
+                    init_var($this->dump[$field_name]);
+                    if(is_array($this->dump[$field_name])) ;
+                    else $this->dump[$field_name] = array();
+                    $this->dump[$field_name][] = $value;
                 }
             }
         }
+
         return $this;
     }
 
@@ -903,24 +915,24 @@ class base_data_abstraction
     {
         $csv_contents = '';
         $filter='';
-        
+
         if(isset($arr_filters))
         {
             $this->escape_arguments($arr_filters);
-            
+
             foreach($arr_filters as $field=>$value)
             {
                 $new_filter='';
                 $new_filter .= "$field = '$value'";
-                
+
                 make_list($filter, $new_filter, ' AND ', FALSE);
             }
         }
-        else        
+        else
         {
             $filter='1';
         }
-        
+
         $result = $this->connect_db()->execute_query('SELECT * FROM ' . $this->tables . ' WHERE ' . $filter, LOG_SELECT_QUERIES)->result;
 
         while($data = $result->fetch_assoc())
@@ -935,6 +947,12 @@ class base_data_abstraction
             $csv_contents .= $new_csv_line . "\r\n";
         }
         return $csv_contents;
+    }
+
+    function buffer($switch=TRUE)
+    {
+        $this->buffer_results = $switch;
+        return $this;
     }
 
     //Used by the custom reporting tool to retreive data

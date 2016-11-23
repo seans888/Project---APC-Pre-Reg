@@ -5,35 +5,30 @@ init_SCV2();
 if(isset($_GET['Table_ID']))
 {
     $Table_ID = rawurldecode($_GET['Table_ID']);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `Table_Name`, `Remarks`, `DB_Connection_ID` FROM `table` WHERE Table_ID = '$Table_ID'");
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT Table_Name, Remarks, DB_Connection_ID FROM \"table\" WHERE Table_ID = :t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
-    $mysqli->close();
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `Page_ID`, `Path_Filename` 
-                            FROM `table_pages` 
-                            WHERE `Table_ID` = '$Table_ID'");
-    if($result = $mysqli->store_result())
+
+    $stmt = $d->prepare("SELECT Page_ID, Path_Filename FROM table_pages WHERE Table_ID = :t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    if($result = $stmt->execute())
     {
-        $numParticulars = $result->num_rows;
-        for($a=0;$a<$numParticulars;$a++)
+        $numParticulars = 0;
+        while($data = $result->fetchArray())
         {
-            $data = $result->fetch_assoc();
-            $Page_ID[$a] = $data['Page_ID'];
-            $Filename[$a] = basename($data['Path_Filename']);
+            $Page_ID[$numParticulars] = $data['Page_ID'];
+            $Filename[$numParticulars] = basename($data['Path_Filename']);
             $Folder = dirname($data['Path_Filename']);
             if($Folder=='.') $Folder='';
+            ++$numParticulars;
         }
     }
-    else die($mysqli->error);
-    $mysqli->close();
 
     $Orig_Table_Name = $Table_Name;
 }
@@ -48,7 +43,7 @@ elseif(xsrf_guard())
         header('location: ListView_Tables.php');
         exit();
     }
-    
+
     if($_POST['btnSubmit'] || $_POST['particularButton'])
     {
         extract($_POST);
@@ -58,7 +53,7 @@ elseif(xsrf_guard())
     {
         $errMsg = scriptCheckIfNull('DB Connection', $DB_Connection_ID,
                                     'Table Name', $Table_Name);
-        
+
         for($a=0;$a<$particularsCount;$a++)
         {
             $b = $a + 1;
@@ -75,9 +70,13 @@ elseif(xsrf_guard())
 
         if($errMsg=="")
         {
-            $select = "SELECT `Table_Name` FROM `table` WHERE `Table_Name`='$Table_Name' AND `Table_Name`!='$Orig_Table_Name' AND Project_ID='$_SESSION[Project_ID]'"; 
+            $d = connect_DB();
+            $stmt = $d->prepare('SELECT Table_Name FROM "table" WHERE Table_Name=:t_id AND Table_Name!=:o_name AND Project_ID=:p_id');
+            $stmt->bindValue(':t_id', $Table_Name);
+            $stmt->bindValue(':o_name', $Orig_Table_Name);
+            $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
             $error = "The table name '$Table_Name' already exists. Please choose a new name. <br>";
-            $errMsg = scriptCheckIfUnique($select, $error);
+            $errMsg = scriptCheckIfUnique($stmt, $error);
 
             if($errMsg=="")
             {
@@ -119,6 +118,7 @@ drawMultiFieldStart('Table Pages');
     for($a=0;$a<$numParticulars;$a++)
     {
         echo "<tr><td>" . ($a+1) . "</td><td>";
+        init_var($Page_ID[$a]);
         drawTablePage($Page_ID[$a], TRUE); echo "&nbsp;&nbsp;";
         echo "</td><td>";
         drawTextField('','Filename', FALSE, '', FALSE, TRUE, $a); echo "&nbsp;&nbsp;";

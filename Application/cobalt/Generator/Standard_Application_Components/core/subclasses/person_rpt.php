@@ -4,7 +4,7 @@ class person_rpt extends reporter
 {
     var $tables='person';
     var $session_array_name = 'PERSON_REPORT_CUSTOM';
-    var $report_title = 'Person: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'person_html';
     var $data_subclass = 'person';
     var $result_page = 'reporter_result_person.php';

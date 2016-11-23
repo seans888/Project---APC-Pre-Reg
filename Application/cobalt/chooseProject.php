@@ -18,7 +18,8 @@ if(TARGET_DIRECTORY != 'Generator/Projects/')
 }
 
 //Check PHP version.
-if(!defined('PHP_VERSION_ID')) {
+if(!defined('PHP_VERSION_ID'))
+{
     $version = explode('.', PHP_VERSION);
     define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
     define('PHP_MAJOR_VERSION', $version[0]);
@@ -31,12 +32,10 @@ if(PHP_VERSION_ID < 50300)
     trigger_error('Unsupported PHP Version', E_USER_ERROR);
     $stop_exec = TRUE;
 }
-
 //Check for required extensions
 $has_mbstring = extension_loaded('mbstring');
-$has_mcrypt   = extension_loaded('mcrypt');
-$has_mysqli   = extension_loaded('mysqli');
 $has_openssl  = extension_loaded('openssl');
+$has_sqlite   = extension_loaded('sqlite3');
 
 $module_error_message = 'MISSING EXTENSION: ';
 if($has_mbstring == FALSE)
@@ -45,23 +44,48 @@ if($has_mbstring == FALSE)
     $stop_exec = TRUE;
 }
 
-if($has_mcrypt == FALSE)
-{
-    trigger_error($module_error_message . 'mcrypt', E_USER_ERROR);
-    $stop_exec = TRUE;
-}
-if($has_mysqli == FALSE)
-{
-    trigger_error($module_error_message . 'mysqli', E_USER_ERROR);
-    $stop_exec = TRUE;
-}
 if($has_openssl == FALSE)
 {
     trigger_error($module_error_message . 'openssl', E_USER_ERROR);
     $stop_exec = TRUE;
 }
+if($has_sqlite == FALSE)
+{
+    trigger_error($module_error_message . 'SQLite3', E_USER_ERROR);
+    $stop_exec = TRUE;
+}
+
+//Check if metadata folder (sqlite3 database directory) is readable and writable
+$metadata_path = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'metadata';
+$metadata_is_readable = is_readable($metadata_path);
+$metadata_is_writable = is_writable($metadata_path);
+if($metadata_is_readable == FALSE)
+{
+    trigger_error('Cobalt "metadata" directory is not readable (' . $metadata_path . ').', E_USER_ERROR);
+    $stop_exec = TRUE;
+}
+if($metadata_is_writable == FALSE)
+{
+    trigger_error('Cobalt "metadata" directory is not writable (' . $metadata_path . ').', E_USER_ERROR);
+    $stop_exec = TRUE;
+}
 
 if($stop_exec) exit();
+
+//**********************
+//Create Cobalt database (sqlite3)
+$f = fopen('metadata/status',"rb");
+$db_status = fread($f, 8);
+fclose($f);
+if($db_status=="Complete")
+{
+    //Everything's cool, no need to recreate database.
+}
+else
+{
+    $go_create = "make it so";
+    require 'create_database.php';
+}
 
 //Test the connection to trigger an error now instead of later in the drop-down list in case
 //something is wrong with the connection to the database.
@@ -95,7 +119,7 @@ if(xsrf_guard())
     }
     elseif($CreateProject)
     {
-        $errMsg = scriptCheckIfNull('Project Name', $Project_Name, 'Client', $Client_Name, 
+        $errMsg = scriptCheckIfNull('Project Name', $Project_Name, 'Client', $Client_Name,
                                     'Description', $Project_Description, 'Base Directory', $Base_Directory);
         if($errMsg=="")
         {
@@ -127,15 +151,15 @@ function submit_enter(my_field,e)
     <fieldset class="top">
         CHOOSE EXISTING PROJECT
     </fieldset>
-    <fieldset class="middle">     
+    <fieldset class="middle">
         <table border="0" cellspacing="1">
-        <tr>    
+        <tr>
             <td align="right" width="80"> Project: </td>
             <td>
-                <?php 
+                <?php
                 init_var($Project);
                 drawProjectChooser($Project);
-                ?> 
+                ?>
                 &nbsp;
             </td>
         </table>

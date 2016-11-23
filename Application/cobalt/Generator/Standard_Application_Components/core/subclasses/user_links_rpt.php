@@ -4,7 +4,7 @@ class user_links_rpt extends reporter
 {
     var $tables='user_links';
     var $session_array_name = 'USER_LINKS_REPORT_CUSTOM';
-    var $report_title = 'User Links: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'user_links_html';
     var $data_subclass = 'user_links';
     var $result_page = 'reporter_result_user_links.php';

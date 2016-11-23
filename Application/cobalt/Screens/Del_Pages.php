@@ -5,17 +5,17 @@ init_SCV2();
 if(isset($_GET['Page_ID']))
 {
     $Page_ID = rawurldecode($_GET['Page_ID']);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `Page_Name`, `Generator`, `Description` 
-                            FROM `page` 
-                            WHERE `Page_ID`='$Page_ID'");
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT `Page_Name`, `Generator`, `Description`
+                            FROM `page`
+                            WHERE `Page_ID`=:p_id");
+    $stmt->bindValue(':p_id', $Page_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
 }
 elseif(xsrf_guard())
 {

@@ -4,7 +4,7 @@ class system_settings_rpt extends reporter
 {
     var $tables='system_settings';
     var $session_array_name = 'SYSTEM_SETTINGS_REPORT_CUSTOM';
-    var $report_title = 'System Settings: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'system_settings_html';
     var $data_subclass = 'system_settings';
     var $result_page = 'reporter_result_system_settings.php';

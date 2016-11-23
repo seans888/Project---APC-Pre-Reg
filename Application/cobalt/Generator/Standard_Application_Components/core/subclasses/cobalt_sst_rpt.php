@@ -4,7 +4,7 @@ class cobalt_sst_rpt extends reporter
 {
     var $tables='';
     var $session_array_name = 'COBALT_SST_REPORT_CUSTOM';
-    var $report_title = 'Cobalt Sst: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'cobalt_sst_html';
     var $data_subclass = 'cobalt_sst';
     var $result_page = 'reporter_result_cobalt_sst.php';

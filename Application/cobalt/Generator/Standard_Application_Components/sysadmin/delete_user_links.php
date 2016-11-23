@@ -43,7 +43,7 @@ if(xsrf_guard())
 }
 require 'subclasses/user_links_html.php';
 $html = new user_links_html;
-$html->draw_header('Delete User Links', $message, $message_type);
+$html->draw_header('Delete %%', $message, $message_type);
 $html->draw_listview_referrer_info($filter_field_used, $filter_used, $page_from, $filter_sort_asc, $filter_sort_desc);
 
 $html->draw_hidden('link_id');

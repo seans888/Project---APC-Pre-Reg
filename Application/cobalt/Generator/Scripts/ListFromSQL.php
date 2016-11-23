@@ -2,22 +2,24 @@
 
 function list_from_SQL_settings($Field_ID, $num_databases)
 {
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT b.Field_Name AS `Select_Field_Name`, a.Display, c.Table_Name, d.Database
-                         FROM table_fields_list_source_select a, table_fields b, `table` c, `database_connection` d
-                         WHERE a.Field_ID='$Field_ID' AND
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT b.Field_Name AS Select_Field_Name, a.Display, c.Table_Name, d.Database
+                         FROM table_fields_list_source_select a, table_fields b, \"table\" c, database_connection d
+                         WHERE a.Field_ID=:f_id AND
                                a.Select_Field_ID=b.Field_ID AND
                                b.Table_ID = c.Table_ID AND
                                c.DB_Connection_ID = d.DB_Connection_ID
                          ORDER BY a.Auto_ID ASC");
-    if($result = $mysqli->use_result())
+    $stmt->bindValue(':f_id', $Field_ID);
+
+    if($result = $stmt->execute())
     {
         $select_fields   = array();
         $select_tables   = array();
         $select_display  = 'array(';
         $select_value    = ''; //We'll only accept one value for the select field's value, so we don't need an array
         $order_by_fields = array();
-        while($data = $result->fetch_assoc())
+        while($data = $result->fetchArray())
         {
             extract($data);
             if(!in_array($Select_Field_Name, $select_fields))
@@ -61,37 +63,33 @@ function list_from_SQL_settings($Field_ID, $num_databases)
                 }
             }
         }
-        $result->close();
-        $mysqli->close();
         $select_display = substr($select_display, 0, strlen($select_display) - 2); //remove last comma and space.
         $select_display .= ')'; //close the array declaration.
     }
-    else die($mysqli->error);
+    $stmt->close();
 
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT b.Field_Name AS `Where_Field_Name`, Where_Field_Operand, Where_Field_Value, Where_Field_Connector
+    $stmt = $d->prepare("SELECT b.Field_Name AS `Where_Field_Name`, Where_Field_Operand, Where_Field_Value, Where_Field_Connector
                          FROM table_fields_list_source_where a, table_fields b
                          WHERE a.Field_ID='$Field_ID' AND
                                a.Where_Field_ID=b.Field_ID");
+    $stmt->bindValue(':f_id', $Field_ID);
 
-    if($result = $mysqli->store_result())
+    if($result = $stmt->execute())
     {
-        if($result->num_rows == 0) $where_fields = "NONE"; //no 'where clause' in query.
-        else
+        $num_rows=0;
+        while($data = $result->fetchArray())
         {
-            $where_fields = array();
-            while($data = $result->fetch_assoc())
-            {
-                extract($data);
-                $where_fields[] = array('Field' => $Where_Field_Name,
-                                        'Operand' => $Where_Field_Operand,
-                                        'Value' => $Where_Field_Value,
-                                        'Connector' => $Where_Field_Connector);
-            }
-            $result->close();
-            $mysqli->close();
+            ++$num_rows;
+            extract($data);
+            $where_fields[] = array('Field' => $Where_Field_Name,
+                                    'Operand' => $Where_Field_Operand,
+                                    'Value' => $Where_Field_Value,
+                                    'Connector' => $Where_Field_Connector);
         }
+
+        if($num_rows == 0) $where_fields = "NONE"; //no 'where clause' in query.
     }
+    $stmt->close();
 
     //****Create the query here.*********
     //Set the SELECT clause (fields)
@@ -154,4 +152,3 @@ EOD;
 
     return $settings;
 }
-

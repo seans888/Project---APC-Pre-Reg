@@ -56,7 +56,11 @@ if(DEBUG_MODE)
         }
         else
         {
+            ob_start();
             var_dump($var);
+            $contents = ob_get_contents();
+            ob_end_clean();
+            echo cobalt_htmlentities($contents);
         }
         echo '</pre>';
         echo '</fieldset>';
@@ -153,7 +157,11 @@ if(DEBUG_MODE)
     function sort_dump($data)
     {
         $sorted = ksort($data);
+        ob_start();
         var_dump($data);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        echo cobalt_htmlentities($contents);
     }
 
     function print_fieldsets($subclass)
@@ -177,7 +185,7 @@ if(DEBUG_MODE)
     {
         //This is like var_export but has some output format controls and output format follows Cobalt standard.
 
-        if($original_call)
+        if($original_call === TRUE)
         {
             echo '<pre>';
         }
@@ -234,7 +242,7 @@ if(DEBUG_MODE)
 
             echo ")";
 
-            if($original_call)
+            if($original_call === TRUE OR $original_call == 'custom')
             {
                 echo ';';
             }
@@ -244,7 +252,7 @@ if(DEBUG_MODE)
             }
         }
 
-        if($original_call)
+        if($original_call === TRUE)
         {
             echo '</pre>';
         }

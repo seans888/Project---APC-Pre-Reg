@@ -22,13 +22,15 @@ if(xsrf_guard())
                                     'Child', $Child_Field_ID);
 
         //Check for duplicate
-        $errMsg .= scriptCheckIfUnique("SELECT Relation_ID
-                                        FROM table_relations
-                                        WHERE
-                                                `Relation` = '" . $Relation . "' AND
-                                                `Parent_Field_ID` = '" . $Parent_Field_ID . "' AND
-                                                `Child_Field_ID` = '" . $Child_Field_ID . "'",
-                                       "Cannot add relationship - this relationship already exists!<br />");
+        $d = connect_DB();
+        $stmt = $d->prepare("SELECT Relation_ID FROM table_relations
+                                WHERE Relation = :rel AND Parent_Field_ID = :pf_id AND Child_Field_ID = :cf_id");
+        $stmt->bindValue(':rel', $Relation);
+        $stmt->bindValue(':pf_id', $Parent_Field_ID);
+        $stmt->bindValue(':cf_id', $Child_Field_ID);
+
+        $message = "Cannot add relationship - this relationship already exists!<br />";
+        $errMsg .= scriptCheckIfUnique($stmt, $message);
 
         if($Relation=="ONE-to-ONE")
         {
@@ -39,33 +41,28 @@ if(xsrf_guard())
                 //Check if chosen fields actually exist in parent
                 //--Get Table ID
                 $Table_ID = '';
-                $db_handle = connect_DB();
-                $db_handle->real_query("SELECT Table_ID
-                                        FROM `table_fields`
-                                        WHERE Field_ID = '$Parent_Field_ID'");
-                if ($result = $db_handle->use_result())
+                $d = connect_DB();
+                $stmt = $d->prepare("SELECT Table_ID FROM table_fields WHERE Field_ID = :pf_id");
+                $stmt->bindValue(':pf_id', $Parent_Field_ID);
+                if ($result = $stmt->execute())
                 {
-                    while($row = $result->fetch_assoc())
+                    while($row = $result->fetchArray())
                     {
                         $Table_ID = $row['Table_ID'];
                     }
-                    $result->close();
                 }
+                $result->finalize();
 
                 //--Get the fields of this table
                 $arr_fields = array();
-                $db_handle = connect_DB();
-                $db_handle->real_query("SELECT Field_Name
-                                        FROM `table_fields`
-                                        WHERE Table_ID = '$Table_ID'
-                                        ORDER BY Field_Name ");
-                if ($result = $db_handle->use_result())
+                $stmt = $d->prepare("SELECT Field_Name FROM table_fields WHERE Table_ID = :t_id ORDER BY Field_Name ");
+                $stmt->bindValue(':t_id', $Table_ID);
+                if ($result = $stmt->execute())
                 {
-                    while($row = $result->fetch_assoc())
+                    while($row = $result->fetchArray())
                     {
                         $arr_fields[] = $row['Field_Name'];
                     }
-                    $result->close();
                 }
 
                 //--breakdown the chosen fields

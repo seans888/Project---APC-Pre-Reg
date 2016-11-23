@@ -2,31 +2,34 @@
 
 //This file creates the module for each table page submitted.
 
-function createModule($Table_ID, $Page_ID, $path_array, $mysqli, $mysqli2)
+function createModule($Table_ID, $Page_ID, $path_array)
 {
     $module_link_name='';
     extract($path_array);
 
-    $mysqli->real_query("SELECT Base_Directory FROM project WHERE Project_ID='$_SESSION[Project_ID]'");
-    if($result=$mysqli->use_result())
+    $d = connect_DB();
+
+    $stmt = $d->prepare("SELECT Base_Directory FROM project WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    if($result=$stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         $Base_Directory = $data['Base_Directory'];
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
-    $mysqli->real_query("SELECT b.Generator, a.Path_Filename
+    $stmt = $d->prepare("SELECT b.Generator, a.Path_Filename
                             FROM table_pages a, page b
                             WHERE a.Table_ID = '$Table_ID' AND a.Page_ID='$Page_ID' AND a.Page_ID=b.Page_ID");
-    if($result=$mysqli->use_result())
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->bindValue(':p_id', $Page_ID);
+    if($result=$stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
         $Path_Filename = 'modules/' . $Path_Filename;
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
 
     $module_content=''; //This is the variable that will contain all the module text (everything which will be written to the file).
@@ -34,14 +37,14 @@ function createModule($Table_ID, $Page_ID, $path_array, $mysqli, $mysqli2)
     //This is where module "sorcery" happens, depending on the "table page" the user chose.
     //First, let's get the field information (deja vu!) for this table.
 
-    $mysqli->real_query("SELECT Field_ID, Field_Name, Data_Type, Length, Attribute, Control_Type, Label, In_Listview
-                            FROM table_fields
-                            WHERE Table_ID='$Table_ID'");
+    $stmt = $d->prepare("SELECT Field_ID, Field_Name, Data_Type, Length, Attribute, Control_Type, Label, In_Listview
+                            FROM table_fields WHERE Table_ID=:t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
 
     $field = array(); //We'll store all field information here, so we can reuse the information without having to re-query
-    if($result = $mysqli->use_result())
+    if($result = $stmt->execute())
     {
-        while($data = $result->fetch_assoc())
+        while($data = $result->fetchArray())
         {
             extract($data);
             $field[] = array('Field_ID'=>"$Field_ID",
@@ -54,24 +57,23 @@ function createModule($Table_ID, $Page_ID, $path_array, $mysqli, $mysqli2)
                              'In_Listview'=>"$In_Listview");
         }
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
     //Let's get the table name so we know what subclass to require later.
     //The table name is also the class name generated, so let's call it 'class_name' in the query.
     //Additionally, let's get the name of the database that this table belongs to because this information
     //will be used by the listview module if there is a relationship to other tables.
-
-    $mysqli->real_query("SELECT a.`Table_Name` AS `class_name`, b.`Path_Filename` AS `List_View_Page`, d.`Database` AS `DB_Name`
-                         FROM `table` a, `table_pages` b, `page` c, `database_connection` d
-                         WHERE a.Table_ID='$Table_ID' AND
+    $stmt = $d->prepare("SELECT a.Table_Name AS class_name, b.Path_Filename AS List_View_Page, d.Database AS DB_Name
+                         FROM \"table\" a, table_pages b, page c, database_connection d
+                         WHERE a.Table_ID=:t_id AND
                                 a.Table_ID=b.Table_ID AND
                                 b.Page_ID=c.Page_ID AND
                                 c.Description LIKE 'List View%' AND
                                 a.DB_Connection_ID = d.DB_Connection_ID");
-    if($result = $mysqli->use_result())
+    $stmt->bindValue(':t_id', $Table_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
         $object_name = 'dbh_' . $class_name; //to be used by create_form_data component
         $dbh_name = '$' . $object_name; //name of instantiated data abstraction subclass.
@@ -80,8 +82,7 @@ function createModule($Table_ID, $Page_ID, $path_array, $mysqli, $mysqli2)
         $html_subclass_file = $class_name . '_html.php';
         $List_View_Page = basename($List_View_Page);
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
 
     //For the ACL query generation later on, we need the module link name. This will depend on the generator file.
@@ -118,18 +119,18 @@ function createModule($Table_ID, $Page_ID, $path_array, $mysqli, $mysqli2)
 
         //Now we get the path and filename of the add module.
 
-        $mysqli->real_query("SELECT b.`Path_Filename` AS `Add_Module_Path`
-                             FROM `table` a, `table_pages` b, `page` c
-                             WHERE a.Table_ID='$Table_ID' AND
+        $stmt = $d->prepare("SELECT b.Path_Filename AS Add_Module_Path
+                             FROM \"table\" a, table_pages b, page c
+                             WHERE a.Table_ID=:t_id AND
                                    a.Table_ID=b.Table_ID AND
                                    b.Page_ID=c.Page_ID AND
                                    c.Generator LIKE 'Add%'");
-        $result = $mysqli->use_result();
-        $data = $result->fetch_assoc();
-        $result->close();
+        $stmt->bindValue(':t_id', $Table_ID);
+        $result = $stmt->execute();
+        $data = $result->fetchArray();
+        $stmt->close();
         extract($data);
         $add_module_link = basename($Add_Module_Path);
-
 
         //We also need the name of their Edit and Delete modules.
         //This is actually to serve as a passport tag, so the List View module

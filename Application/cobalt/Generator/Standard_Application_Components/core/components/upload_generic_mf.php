@@ -12,6 +12,10 @@ for($a=0; $a<$$mf_upload_counter_name; ++$a)
 
     $orig_filename = basename(str_replace("\0",'',($_FILES[$file_upload_control_name]['name'][$a])));
 
+    //Clean filename to make sure it is safe and valid for filesystems
+    $invalid_fs_chars = array("\\","/","<",">","*","|",'"',"?","+","&",":");
+    $orig_filename = str_replace($invalid_fs_chars,'_',$orig_filename);
+
     if(empty($_FILES[$file_upload_control_name]['name'][$a]))
     {
         $extension = pathinfo($_POST[$existing_file_upload_control_name][$a], PATHINFO_EXTENSION);

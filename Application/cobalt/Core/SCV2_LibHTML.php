@@ -71,7 +71,7 @@ function drawRadioField($arrayItems, $label, $name=null, $drawTableTags=TRUE)
     if($name==null) $name=$label;
     global $$name;
 
-    if($drawTableTags) echo '<tr><td align="right">' . $label . ':</td><td>';
+    if($drawTableTags) echo '<tr><td align="right" style="padding-right: 10px;">' . $label . ':</td><td>';
     else echo $label;
 
     $numItems = count($arrayItems['Items']);
@@ -92,7 +92,7 @@ function drawSelectField($function, $label, $name=null, $drawTableTags=TRUE, $ex
     if($name==null) $name=$label;
     global $$name;
 
-    if($drawTableTags) echo '<tr><td align="right">' . $label . ':</td><td>';
+    if($drawTableTags) echo '<tr><td align="right" style="padding-right: 10px;">' . $label . ':</td><td>';
     else echo $label;
 
     $function($$name, false, $name, $extra);
@@ -106,10 +106,15 @@ function drawTextField($label, $name=null, $detailView=FALSE, $controlType='', $
     if($controlType==null) $controlType='text';
 
     global $$name;
+    if($dynamicList)
+    {
+        if(!isset(${$name}[$cntr])) ${$name}[$cntr] = '';
+    }
+
 
     $controlType = strtolower($controlType);
 
-    if($drawTableTags) echo '<tr ><td align="right" valign="middle" width=40%>' . $label . ':</td><td>';
+    if($drawTableTags) echo '<tr><td align="right" valign="middle" width=40% style="padding-right: 10px;">' . $label . ':</td><td>';
     else echo $label;
 
     if($detailView==FALSE)
@@ -334,6 +339,94 @@ function drawBookListGenerator($Book_List_Generator, $dynamicList=FALSE, $name='
     echo '</select>';
 }
 
+function drawCharSetMethod($ignore, $dynamicList, $name)
+{
+    if($dynamicList)
+    {
+        echo '<select name="' . $name . '[]">';
+    }
+    else
+    {
+        echo '<select name="' . $name . '">';
+    }
+
+    global $$name;
+
+    echo '<option value=""></option>';
+
+    if($$name=="generate_alpha_set")
+    {
+        echo '<option value="generate_alpha_set" selected>Alpha Set</option>';
+    }
+    else
+    {
+        echo '<option value="generate_alpha_set">Alpha Set</option>';
+    }
+
+    if($$name=="generate_alphanum_set")
+    {
+        echo '<option value="generate_alphanum_set" selected>Alphanum Set</option>';
+    }
+    else
+    {
+        echo '<option value="generate_alphanum_set">Alphanum Set</option>';
+    }
+
+    if($$name=="generate_num_set")
+    {
+        echo '<option value="generate_num_set" selected>Num Set</option>';
+    }
+    else
+    {
+        echo '<option value="generate_num_set">Num Set</option>';
+    }
+
+    echo '</select>';
+}
+
+function drawColumnAlignment($ignore, $dynamicList, $name)
+{
+    if($dynamicList)
+    {
+        echo '<select name="' . $name . '[]">';
+    }
+    else
+    {
+        echo '<select name="' . $name . '">';
+    }
+
+    global $$name;
+
+    if($$name=="left")
+    {
+        echo '<option value="left" selected>Left</option>';
+    }
+    else
+    {
+        echo '<option value="left">Left</option>';
+    }
+
+    if($$name=="center")
+    {
+        echo '<option value="center" selected>Center</option>';
+    }
+    else
+    {
+        echo '<option value="center">Center</option>';
+    }
+
+    if($$name=="right")
+    {
+        echo '<option value="right" selected>Right</option>';
+    }
+    else
+    {
+        echo '<option value="right">Right</option>';
+    }
+
+    echo '</select>';
+}
+
 function drawControlType($Control_Type, $dynamicList=FALSE, $name='Control_Type')
 {
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
@@ -359,6 +452,9 @@ function drawControlType($Control_Type, $dynamicList=FALSE, $name='Control_Type'
 
     if($Control_Type=="none") echo '<option value="none" selected>None</option>';
     else echo '<option value="none">None</option>';
+
+    if($Control_Type=="hidden") echo '<option value="hidden" selected>Hidden</option>';
+    else echo '<option value="hidden">Hidden</option>';
 
     echo '</select>';
 }
@@ -400,18 +496,16 @@ function drawDBConnection($DB_Connection_ID,  $dynamicList=FALSE, $name='DB_Conn
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
     else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT DB_Connection_ID, DB_Connection_Name FROM database_connection WHERE Project_ID='$_SESSION[Project_ID]' ORDER BY DB_Connection_Name");
-
-    if ($result = $db_handle->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT DB_Connection_ID, DB_Connection_Name FROM database_connection
+                            WHERE Project_ID=:p_id ORDER BY DB_Connection_Name");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['DB_Connection_ID'] == $DB_Connection_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s</option>\n", $row['DB_Connection_ID'], $row['DB_Connection_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['DB_Connection_ID'] == $DB_Connection_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s</option>\n", $row['DB_Connection_ID'], $row['DB_Connection_Name']);
     }
     echo '</select>';
 }
@@ -427,17 +521,20 @@ function drawFooter()
     $ram_used = memory_get_peak_usage(false) / 1024;
     $max_ram_used = memory_get_peak_usage(true) / 1024;
 
+    require FULLPATH_CORE . '../version_info.php';
+
     echo '
     <div class="Footer">
         <div class="container_footer">
             <fieldset>
                 <table>
+                <tr><td colspan="2">Cobalt ' . COBALT_MAJOR_VERSION . ' ' . COBALT_BUILD_VERSION . '</td></tr>
                 <tr><td colspan="2">Page Resource Usage Statistics</td></tr>
                 <tr><td align="right"> CPU Time: </td><td> &nbsp;' . $cpu_time . ' seconds </td></tr>
                 <tr><td align="right"> RAM usage: </td><td> &nbsp;' . number_format($ram_used,0,'.',',') .'KB </td></tr>
                 <tr><td align="right"> Allocated RAM: </td><td> &nbsp;' . number_format($max_ram_used,0,'.',',') .'KB </td></tr>
                 <tr><td colspan="2">
-                    &copy; 2011-2015, JV Roig <br>
+                    &copy; 2011-2016, JV Roig <br>
                     <a class="footer" href="http://jvroig.com/main/cobalt" target="_blank"> Cobalt Homepage @ JVRoig.com</a>
                 </td></tr>
                 </table>
@@ -493,7 +590,7 @@ function drawHeader($drawForm=TRUE, $drawHeaderMenu=TRUE, $requireProject=TRUE)
         .'<div class="superUltraHyperMegaOMFGBBQContainer">'. "\n";
 
     echo '<div class="HeaderBanner">
-            COBALT<span>mark IV   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enterprise-Class Rapid Application Development</span>
+            COBALT<span>mark V   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Enterprise-Class Rapid Application Development</span>
           </div>';
 
     if($drawHeaderMenu==TRUE) drawHeaderMenu();
@@ -534,21 +631,18 @@ function drawFields($Field_ID, $dynamicList=FALSE, $name='Field_ID')
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
     else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT a.Field_ID, a.Field_Name, b.Table_Name
-                            FROM `table_fields` a, `table` b
-                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID='$_SESSION[Project_ID]'
-                            ORDER BY b.Table_Name, a.Field_Name ");
-
-    if($result = $db_handle->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT a.Field_ID, a.Field_Name, b.Table_Name
+                            FROM table_fields a, \"table\" b
+                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID=:p_id
+                            ORDER BY b.Table_Name, a.Field_Name");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Field_ID'] == $Field_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['Field_ID'] == $Field_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
     }
     echo '</select>';
 }
@@ -562,21 +656,18 @@ function drawFieldsParent($Field_ID, $dynamicList=FALSE, $name='Field_ID')
         echo '<option disabled selected></option>';
     }
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT a.Field_ID, a.Field_Name, b.Table_Name
-                            FROM `table_fields` a, `table` b
-                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID='$_SESSION[Project_ID]' AND a.Attribute='primary key'
-                            ORDER BY b.Table_Name, a.Field_Name ");
-
-    if($result = $db_handle->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT a.Field_ID, a.Field_Name, b.Table_Name
+                            FROM table_fields a, \"table\" b
+                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID=:p_id AND a.Attribute='primary key'
+                            ORDER BY b.Table_Name, a.Field_Name");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Field_ID'] == $Field_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['Field_ID'] == $Field_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
     }
     echo '</select>';
 }
@@ -586,21 +677,18 @@ function drawListSourceSelectField($Select_Field_ID, $dynamicList=FALSE, $name='
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
     else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT a.Field_ID, a.Field_Name, b.Table_Name
-                            FROM `table_fields` a, `table` b
-                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID='$_SESSION[Project_ID]'
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT a.Field_ID, a.Field_Name, b.Table_Name
+                            FROM table_fields a, \"table\" b
+                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID=:p_id
                             ORDER BY b.Table_Name, a.Field_Name ");
-
-    if($result = $db_handle->use_result())
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Field_ID'] == $Select_Field_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['Field_ID'] == $Select_Field_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
     }
     echo '</select>';
 }
@@ -625,21 +713,18 @@ function drawListSourceWhereField($Where_Field_ID, $dynamicList=FALSE)
     else echo '<select name="Where_Field_ID">';
     echo '<option value="(NONE)"> (NONE) </option>';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT a.Field_ID, a.Field_Name, b.Table_Name
-                            FROM `table_fields` a, `table` b
-                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID='$_SESSION[Project_ID]'
-                            ORDER BY b.Table_Name, a.Field_Name ");
-
-    if($result = $db_handle->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT a.Field_ID, a.Field_Name, b.Table_Name
+                            FROM table_fields a, \"table\" b
+                            WHERE a.Table_ID = b.Table_ID AND b.Project_ID=:p_id
+                            ORDER BY b.Table_Name, a.Field_Name");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Field_ID'] == $Where_Field_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['Field_ID'] == $Where_Field_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s.%s</option>\n", $row['Field_ID'], $row['Table_Name'], $row['Field_Name']);
     }
     echo '</select>';
 }
@@ -761,75 +846,60 @@ function drawPredefinedList($List_ID, $dynamicList=FALSE, $name='List_ID')
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
     else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT List_ID, List_Name FROM table_fields_predefined_list WHERE Project_ID='" . $db_handle->real_escape_string($_SESSION['Project_ID']) . "' ORDER BY List_Name");
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT List_ID, List_Name FROM table_fields_predefined_list WHERE Project_ID=:p_id ORDER BY List_Name");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    $result = $stmt->execute();
 
-    if($result = $db_handle->use_result())
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            echo "<hr>rowlsitID: $row[List_ID] while ListID is $List_ID <br>";
-            if($row['List_ID'] == $List_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s</option>\n", $row['List_ID'], $row['List_Name']);
-        }
-        $result->close();
+        $mark="";
+        echo "<hr>rowlsitID: $row[List_ID] while ListID is $List_ID <br>";
+        if($row['List_ID'] == $List_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s</option>\n", $row['List_ID'], $row['List_Name']);
     }
     echo '</select>';
 }
 
 function drawProjectChooser($Project, $dynamicList=FALSE, $name="Project")
 {
+    if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
+    else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT Project_ID, Project_Name FROM project ORDER BY Project_Name") or die("<hr>Fatal Error: " . $db_handle->error . '<hr>');
-
-    if ($result = $db_handle->use_result())
+    $d = connect_DB();
+    $result = $d->query("SELECT Project_ID, Project_Name FROM project ORDER BY Project_Name") or die("<hr>Fatal Error: " . $db_handle->error . '<hr>');
+    while($row = $result->fetchArray())
     {
-        if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
-        else echo '<select name="' . $name . '">';
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Project_ID'] == $Project) $mark='selected';
-            printf("<option value='%s' $mark>%s</option>\n", $row['Project_ID'], $row['Project_Name']);
-        }
-        $result->close();
-        echo '</select>';
+        $mark="";
+        if($row['Project_ID'] == $Project) $mark='selected';
+        printf("<option value='%s' $mark>%s</option>\n", $row['Project_ID'], $row['Project_Name']);
     }
+
+    echo '</select>';
 }
 
 function drawSubtextFields($Parent_Field_ID)
 {
     //Get Table ID
     $Table_ID = '';
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT Table_ID
-                            FROM `table_fields`
-                            WHERE Field_ID = '$Parent_Field_ID'");
-    if ($result = $db_handle->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT Table_ID FROM `table_fields` WHERE Field_ID = :f_id");
+    $stmt->bindValue(':f_id', $Parent_Field_ID);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $Table_ID = $row['Table_ID'];
-        }
-        $result->close();
+        $Table_ID = $row['Table_ID'];
     }
 
     //Get the fields of this table
     $arr_fields = array();
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT Field_Name
-                            FROM `table_fields`
-                            WHERE Table_ID = '$Table_ID'
-                            ORDER BY Field_Name ");
-    if ($result = $db_handle->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT Field_Name FROM `table_fields` WHERE Table_ID = :t_id ORDER BY Field_Name");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $result = $stmt->execute();
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $arr_fields[] = $row['Field_Name'];
-        }
-        $result->close();
+        $arr_fields[] = $row['Field_Name'];
     }
 
     echo '<div name="subtext_div" id="subtext_div" style="width: 100%;">';
@@ -853,20 +923,14 @@ function drawTable($Table_ID, $dynamicList=FALSE, $name="Table_ID")
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
     else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT Table_ID, Table_Name FROM `table` WHERE Project_ID='$_SESSION[Project_ID]' ORDER BY Table_Name");
-
-    if($result = $db_handle->use_result())
+    $d = connect_DB();
+    $result = $d->query("SELECT Table_ID, Table_Name FROM `table` WHERE Project_ID='$_SESSION[Project_ID]' ORDER BY Table_Name");
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Table_ID'] == $Table_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s</option>\n", $row['Table_ID'], $row['Table_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['Table_ID'] == $Table_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s</option>\n", $row['Table_ID'], $row['Table_Name']);
     }
-    echo '</select>';
 }
 
 function drawTablePage($Page_ID, $dynamicList=FALSE, $name='Page_ID')
@@ -874,20 +938,14 @@ function drawTablePage($Page_ID, $dynamicList=FALSE, $name='Page_ID')
     if($dynamicList==TRUE) echo '<select name="' . $name . '[]">';
     else echo '<select name="' . $name . '">';
 
-    $db_handle = connect_DB();
-    $db_handle->real_query("SELECT Page_ID, Page_Name FROM page ORDER BY Page_Name");
-
-    if($result = $db_handle->use_result())
+    $d = connect_DB();
+    $result = $d->query("SELECT Page_ID, Page_Name FROM page ORDER BY Page_Name");
+    while($row = $result->fetchArray())
     {
-        while($row = $result->fetch_assoc())
-        {
-            $mark="";
-            if($row['Page_ID'] == $Page_ID) $mark='selected';
-            printf("<option value='%s' $mark>%s</option>\n", $row['Page_ID'], $row['Page_Name']);
-        }
-        $result->close();
+        $mark="";
+        if($row['Page_ID'] == $Page_ID) $mark='selected';
+        printf("<option value='%s' $mark>%s</option>\n", $row['Page_ID'], $row['Page_Name']);
     }
-    echo '</select>';
 }
 function drawTableRelationType($Relation, $dynamicList=FALSE, $name='Relation', $extra='')
 {
@@ -903,9 +961,63 @@ function drawTableRelationType($Relation, $dynamicList=FALSE, $name='Relation', 
     echo '</select>';
 }
 
+function drawTrimValue($ignore, $dynamicList, $name)
+{
+    if($dynamicList)
+    {
+        echo '<select name="' . $name . '[]">';
+    }
+    else
+    {
+        echo '<select name="' . $name . '">';
+    }
+
+    global $$name;
+
+    if($$name=="trim")
+    {
+        echo '<option value="trim" selected>Left and Right Trim</option>';
+    }
+    else
+    {
+        echo '<option value="trim">Left and Right Trim</option>';
+    }
+
+    if($$name=="ltrim")
+    {
+        echo '<option value="ltrim" selected>Left Trim Only</option>';
+    }
+    else
+    {
+        echo '<option value="ltrim">Left Trim Only</option>';
+    }
+
+    if($$name=="rtrim")
+    {
+        echo '<option value="rtrim" selected>Right Trim Only</option>';
+    }
+    else
+    {
+        echo '<option value="rtrim">Right Trim Only</option>';
+    }
+
+    echo '</select>';
+}
+
 function drawValidationRoutine($Validation_Routine, $dynamicList=FALSE, $name='Validation_Routine')
 {
     if($dynamicList==TRUE) echo '<input type=text name="' . $name . '[]" value="' . $Validation_Routine . '">';
     else echo '<input type=text name="' . $name . '" value="' . $Validation_Routine . '">';
 }
-?>
+
+function fieldsetStart($title)
+{
+    echo '<fieldset style="margin: 10px; padding: 10px; background: #c8cfd6; border-style: none">';
+    echo '<legend style="background: #535f6b; color: #ffffff">' . $title . '</legend>';
+    echo '<table class="inputForm" style="width: 100%">';
+}
+
+function fieldsetEnd()
+{
+    echo '</table></fieldset>';
+}

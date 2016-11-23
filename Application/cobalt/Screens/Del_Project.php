@@ -2,28 +2,23 @@
 require '../Core/SCV2_Core.php';
 init_SCV2();
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT `Project_Name`, `Client_Name`, `Project_Description`, `Base_Directory`, `Database_Connection_ID` 
-                        FROM `project`  
-                        WHERE `Project_ID`='$_SESSION[Project_ID]'");
-if($result = $mysqli->use_result())
+$d = connect_DB();
+$stmt = $d->prepare("SELECT Project_Name, Client_Name, Project_Description, Base_Directory, Database_Connection_ID
+                        FROM project WHERE Project_ID=:p_id");
+$stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+if($result = $stmt->execute())
 {
-    $data = $result->fetch_assoc();
+    $data = $result->fetchArray();
     extract($data);
 }
-else die($mysqli->error);
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT `DB_Connection_Name` 
-                        FROM `database_connection` 
-                        WHERE `DB_Connection_ID`='$Database_Connection_ID'");
-if($result = $mysqli->use_result()) 
+$stmt = $d->prepare("SELECT DB_Connection_Name FROM database_connection WHERE DB_Connection_ID=:db_id");
+$stmt->bindValue(':db_id', $Database_Connection_ID);
+if($result = $stmt->execute())
 {
-    if($data = $result->fetch_assoc()) extract($data);
-    $result->close();
+    if($data = $result->fetchArray()) extract($data);
 }
-else die($mysqli->error);
-
+$d->close();
 
 if(xsrf_guard())
 {
@@ -45,7 +40,7 @@ if(xsrf_guard())
         {
             obliterate_dir("../Generator/Projects/" . $base_directory);
         }
-        queryDeleteProject($_POST, $mysqli);
+        queryDeleteProject($_POST);
     }
 }
 
@@ -61,7 +56,7 @@ Delete Project Data and All Files
 
 <fieldset class="middle">
 <table class="input_form">
-<?php 
+<?php
 drawTextField('Project Name', 'Project_Name',TRUE);
 drawTextField('Client Name', 'Client_Name',TRUE);
 drawTextField('Base Directory', 'Base_Directory',TRUE);

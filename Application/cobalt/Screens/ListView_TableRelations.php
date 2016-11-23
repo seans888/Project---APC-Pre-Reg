@@ -11,14 +11,15 @@ if(xsrf_guard())
     }
 }
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT Relation_ID, Relation, Label FROM `table_relations` WHERE `Project_ID`='$_SESSION[Project_ID]' ORDER BY `Relation`, `Label`");
+$d = connect_DB();
+$stmt = $d->prepare("SELECT Relation_ID, Relation, Label FROM table_relations WHERE Project_ID=:p_id ORDER BY Relation, Label");
+$stmt->bindValue(':p_id', $_SESSION['Project_ID']);
 
 drawHeader();
 drawPageTitle('List View: Table Relationships',$errMsg);
 ?>
 <fieldset class="container">
-<?php drawButton('CANCEL');?><a class='blue' href='DefineTableRelations.php'> Define New Relationship </a>
+<?php drawButton('CANCEL');?>&nbsp;<a class='blue' href='DefineTableRelations.php'>Define New Relationship</a>
 <table border="1" width="100%" class="listView">
 <tr class="listRowHead">
     <td width="140">Operations</td>
@@ -26,11 +27,11 @@ drawPageTitle('List View: Table Relationships',$errMsg);
     <td>Tables</td>
 </tr>
 <?php
-    if($result = $mysqli->use_result())
+    if($result = $stmt->execute())
     {
         $a=0;
         $class='';
-        while($row = $result->fetch_assoc())
+        while($row = $result->fetchArray())
         {
             extract($row);
             if($a%2 == 0) $class='listRowEven';
@@ -42,11 +43,9 @@ drawPageTitle('List View: Table Relationships',$errMsg);
                 ."&nbsp;&nbsp;<a href='Del_TableRelations.php?Relation_ID=$Relation_ID'><img src='../images/delete.png' alt='Delete' title='Delete'></a></td>";
 
             printf("<td>%s</td><td>%s</td></tr>\n", $row['Relation'], $row['Label']);
-            $a++;
+            ++$a;
         }
-        $result->close();
     }
-    else die($mysqli->error);
 ?>
 </table>
 <?php drawButton('CANCEL');?>

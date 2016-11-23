@@ -11,9 +11,6 @@ if(xsrf_guard())
     }
 }
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT Page_ID, Page_Name, Generator, Description FROM page ORDER BY Page_Name");
-
 drawHeader();
 drawPageTitle('List View: Pages',$errMsg);
 ?>
@@ -27,16 +24,17 @@ drawPageTitle('List View: Pages',$errMsg);
     <td>Description</td>
 </tr>
 <?php
-    if($result = $mysqli->use_result())
+    $d = connect_DB();
+    if($result = $d->query("SELECT Page_ID, Page_Name, Generator, Description FROM page ORDER BY Page_Name"))
     {
         $a=0;
         $class='';
-        while($row = $result->fetch_assoc())
+        while($row = $result->fetchArray())
         {
             extract($row);
             if($a%2 == 0) $class='listRowEven';
             else $class='listRowOdd';
-            
+
             $Page_ID = rawurlencode($Page_ID);
             echo "<tr class=$class><td align=center><a href='DetailView_Pages.php?Page_ID=$Page_ID'><img src='../images/view.png' alt='View' title='View'></a>"
                 ."&nbsp;&nbsp;<a href='Edit_Pages.php?Page_ID=$Page_ID'><img src='../images/edit.png' alt='Edit' title='Edit'></a>"
@@ -45,9 +43,7 @@ drawPageTitle('List View: Pages',$errMsg);
             printf("<td>%s</td><td>%s</td><td>%s</td></tr>\n", $row['Page_Name'], $row['Generator'], $row['Description']);
             $a++;
         }
-        $result->close();
     }
-    else die($mysqli->error);
 ?>
 </table>
 <?php drawButton('CANCEL');?>

@@ -34,356 +34,359 @@ if(xsrf_guard())
                 $file_contents='';
                 $filename = $export_dir . '/' . $Export_Name . '.sql';
                 if(file_exists($filename)) unlink($filename);
-                $sqlfile=fopen($filename,"ab");
-                $mysqli = connect_DB();
+                $sqlfile = fopen($filename,"ab");
+                $d = connect_DB();
 
-                $Project_ID   = $mysqli->real_escape_string($_SESSION['Project_ID']);
-                $Project_Name = $mysqli->real_escape_string($_SESSION['Project_Name']);
+                $Project_ID   = $d->escapeString($_SESSION['Project_ID']);
+                $Project_Name = $d->escapeString($_SESSION['Project_Name']);
 
-
+                /* THIS BLOCK WAS COMMENTED OUT AFTER SQLite3 MIGRATION - NOT NEEDED ANYMORE
                 //Optimize all tables to make sure they insert in our target machine in the expected order.
                 //This is really only absolutely essential for table_fields, but since it is free and might also
                 //be relevant in the future, we just optimize all of them.
                 $file_contents = 'OPTIMIZE TABLE `project`, `database_connection`, `table`, `table_fields`, `table_fields_list`, '
                                  .'`table_fields_list_source_select`, `table_fields_list_source_where`, `table_pages`, `table_relations`,'
                                  .'`table_fields_predefined_list`, `table_fields_predefined_list_items`;';
-
                 $file_contents .= "\r\n\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
-
+                */
 
                 //Project Details
-                $file_contents = 'INSERT INTO `project`(Project_ID, Project_Name, Client_Name, Project_Description, Base_Directory, Database_Connection_ID) VALUES';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT Client_Name, Project_Description, Base_Directory, Database_Connection_ID FROM project WHERE Project_ID=?"))
+                $file_contents = 'INSERT INTO project(Project_ID, Project_Name, Client_Name, Project_Description, Base_Directory, Database_Connection_ID) VALUES';
+                if($stmt = $d->prepare("SELECT Client_Name, Project_Description, Base_Directory, Database_Connection_ID FROM project WHERE Project_ID = :p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($client, $desc, $base_dir, $default_db);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id',$_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $client = $mysqli->real_escape_string($client);
-                        $desc = $mysqli->real_escape_string($desc);
-                        $base_dir = $mysqli->real_escape_string($base_dir);
-                        $default_db = $mysqli->real_escape_string($default_db);
+                        $client     = $d->escapeString($row[0]);
+                        $desc       = $d->escapeString($row[1]);
+                        $base_dir   = $d->escapeString($row[2]);
+                        $default_db = $d->escapeString($row[3]);
 
                         $file_contents .= "('" . $Project_ID . "', '" . $Project_Name . "', '" . $client . "', "
                                          . "'" . $desc . "', '" . $base_dir . "', '" . $default_db . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `project`: " . $stmt->error);
+                    die("Export query error for `project`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Database Connections
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT DB_Connection_ID, DB_Connection_Name, Hostname, Username, Password, `Database` FROM database_connection WHERE Project_ID=?"))
+                if($stmt = $d->prepare("SELECT DB_Connection_ID, DB_Connection_Name, Hostname, Username, Password, \"Database\" FROM database_connection WHERE Project_ID=:p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($dbc_id, $dbc_name, $host, $user, $pass, $db);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $dbc_id = $mysqli->real_escape_string($dbc_id);
-                        $dbc_name = $mysqli->real_escape_string($dbc_name);
-                        $host = $mysqli->real_escape_string($host);
-                        $user = $mysqli->real_escape_string($user);
-                        $pass = $mysqli->real_escape_string($pass);
-                        $db = $mysqli->real_escape_string($db);
+                        $dbc_id   = $d->escapeString($row[0]);
+                        $dbc_name = $d->escapeString($row[1]);
+                        $host     = $d->escapeString($row[2]);
+                        $user     = $d->escapeString($row[3]);
+                        $pass     = $d->escapeString($row[4]);
+                        $db       = $d->escapeString($row[5]);
 
-                        $file_contents .= 'INSERT INTO `database_connection`(DB_Connection_ID, Project_ID, DB_Connection_Name, Hostname, Username, Password, `Database`) VALUES';
+                        $file_contents .= 'INSERT INTO database_connection(DB_Connection_ID, Project_ID, DB_Connection_Name, Hostname, Username, Password, "Database") VALUES';
                         $file_contents .= "('" . $dbc_id . "', '" . $Project_ID . "', '" . $dbc_name . "', "
                                          . "'" . $host . "', '" . $user . "', '" . $pass . "','" . $db . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `database_connection`: " . $stmt->error);
+                    die("Export query error for `database_connection`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
 
                 //Tables
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT Table_ID, DB_Connection_ID, Table_Name, Remarks FROM `table` WHERE Project_ID=?"))
+                if($stmt = $d->prepare("SELECT Table_ID, DB_Connection_ID, Table_Name, Remarks FROM \"table\" WHERE Project_ID=:p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($t_id, $dbc_id, $t_name, $remarks);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $t_id = $mysqli->real_escape_string($t_id);
-                        $dbc_id = $mysqli->real_escape_string($dbc_id);
-                        $t_name = $mysqli->real_escape_string($t_name);
-                        $remarks = $mysqli->real_escape_string($remarks);
+                        $t_id    = $d->escapeString($row[0]);
+                        $dbc_id  = $d->escapeString($row[1]);
+                        $t_name  = $d->escapeString($row[2]);
+                        $remarks = $d->escapeString($row[3]);
 
-                        $file_contents .= 'INSERT INTO `table`(Table_ID, Project_ID, DB_Connection_ID, Table_Name, Remarks) VALUES';
+                        $file_contents .= 'INSERT INTO "table"(Table_ID, Project_ID, DB_Connection_ID, Table_Name, Remarks) VALUES';
                         $file_contents .= "('" . $t_id . "', '" . $Project_ID . "', '" . $dbc_id . "', "
                                          . "'" . $t_name . "', '" . $remarks . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table`: " . $stmt->error);
+                    die("Export query error for `table`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Table Fields
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT a.Field_ID, a.Table_ID, a.`Field_Name`, a.`Data_Type`, a.`Nullable`, a.`Length`, a.`Attribute`, a.Control_Type, a.`Label`, a.In_Listview, a.Auto_Increment "
-                                 ."FROM `table_fields` a, `table` b WHERE a.Table_ID=b.Table_ID AND b.Project_ID=?"))
+                if($stmt = $d->prepare("SELECT a.Field_ID, a.Table_ID, a.Field_Name, a.Data_Type, a.Nullable, a.Length,
+                                               a.Attribute, a.Control_Type, a.Label, a.In_Listview, a.Auto_Increment,
+                                               a.Default_Value, a.Required, a.Size, a.Upload_Path, a.Extra, a.Companion,
+                                               a.Char_Set_Method, a.Char_Set_Allow_Space, a.Extra_Chars_Allowed,
+                                               a.Allow_HTML_Tags, a.Trim_Value, a.Valid_Set, a.Date_Default,
+                                               a.Drop_Down_Has_Blank, a.RPT_In_Report, a.RPT_Column_Format,
+                                               a.RPT_Column_Alignment, a.RPT_Show_Sum
+                                         FROM table_fields a, \"table\" b WHERE a.Table_ID=b.Table_ID AND b.Project_ID=:p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($f_id, $t_id, $f_name, $data_type, $null, $length, $attr, $c_type, $label, $in_lv, $auto_inc);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $f_id = $mysqli->real_escape_string($f_id);
-                        $t_id = $mysqli->real_escape_string($t_id);
-                        $f_name = $mysqli->real_escape_string($f_name);
-                        $data_type = $mysqli->real_escape_string($data_type);
-                        $null = $mysqli->real_escape_string($null);
-                        $length = $mysqli->real_escape_string($length);
-                        $attr = $mysqli->real_escape_string($attr);
-                        $c_type = $mysqli->real_escape_string($c_type);
-                        $label = $mysqli->real_escape_string($label);
-                        $in_lv = $mysqli->real_escape_string($in_lv);
-                        $auto_inc = $mysqli->real_escape_string($auto_inc);
+                        $f_id      = $d->escapeString($row[0]);
+                        $t_id      = $d->escapeString($row[1]);
+                        $f_name    = $d->escapeString($row[2]);
+                        $data_type = $d->escapeString($row[3]);
+                        $null      = $d->escapeString($row[4]);
+                        $length    = $d->escapeString($row[5]);
+                        $attr      = $d->escapeString($row[6]);
+                        $c_type    = $d->escapeString($row[7]);
+                        $label     = $d->escapeString($row[8]);
+                        $in_lv     = $d->escapeString($row[9]);
+                        $auto_inc  = $d->escapeString($row[10]);
+                        $def_val  = $d->escapeString($row[11]);
+                        $req  = $d->escapeString($row[12]);
+                        $size  = $d->escapeString($row[13]);
+                        $upath  = $d->escapeString($row[14]);
+                        $extra  = $d->escapeString($row[15]);
+                        $companion  = $d->escapeString($row[16]);
+                        $char_sm = $d->escapeString($row[17]);
+                        $char_sas  = $d->escapeString($row[18]);
+                        $extra_ca = $d->escapeString($row[19]);
+                        $a_html_t  = $d->escapeString($row[20]);
+                        $trim_val  = $d->escapeString($row[21]);
+                        $v_set  = $d->escapeString($row[22]);
+                        $date_def  = $d->escapeString($row[23]);
+                        $ddhb = $d->escapeString($row[24]);
+                        $rpt_ir = $d->escapeString($row[25]);
+                        $rpt_cf  = $d->escapeString($row[26]);
+                        $rpt_ca  = $d->escapeString($row[27]);
+                        $rpt_ss  = $d->escapeString($row[28]);
 
-                        $file_contents .= 'INSERT INTO `table_fields`'
-                                         .'(Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Control_Type, Label, In_Listview, Auto_Increment) VALUES';
+                        $file_contents .= 'INSERT INTO table_fields'
+                                         .'(Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Control_Type, Label, In_Listview, Auto_Increment,
+                                           Default_Value, Required, Size, Upload_Path, Extra, Companion, Char_Set_Method, Char_Set_Allow_Space,
+                                           Extra_Chars_Allowed, Allow_HTML_Tags, Trim_Value, Valid_Set, Date_Default, Drop_Down_Has_Blank, RPT_In_Report,
+                                           RPT_Column_Format, RPT_Column_Alignment, RPT_Show_Sum) VALUES';
                         $file_contents .= "('" . $f_id . "', '" . $t_id . "', '" . $f_name . "', '" . $data_type . "', "
                                          . "'" . $null . "', '" . $length . "', '" . $attr . "', '" . $c_type . "', "
-                                         . "'" . $label . "', '" . $in_lv . "', '" . $auto_inc . "');" . "\r\n";
+                                         . "'" . $label . "', '" . $in_lv . "', '" . $auto_inc . "', '" . $def_val . "', "
+                                         . "'" . $req . "', '" . $size . "', '" . $upath . "', '" . $extra . "', "
+                                         . "'" . $companion . "', '" . $char_sm . "', '" . $char_sas . "', '" . $extra_ca . "', "
+                                         . "'" . $a_html_t . "', '" . $trim_val . "', '" . $v_set . "', '" . $date_def . "', "
+                                         . "'" . $ddhb . "', '" . $rpt_ir. "', '" . $rpt_cf . "', '" . $rpt_ca . "', '" . $rpt_ss . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_fields`: " . $stmt->error);
+                    die("Export query error for `table_fields`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
 
                 //Table Fields List
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT a.Field_ID, a.List_ID "
-                                 ."FROM `table_fields_list` a, `table_fields` b, `table` c "
-                                 ."WHERE a.Field_ID=b.Field_ID AND b.Table_ID=c.Table_ID AND c.Project_ID=?"))
+                if($stmt = $d->prepare("SELECT a.Field_ID, a.List_ID "
+                                 ."FROM table_fields_list a, table_fields b, \"table\" c "
+                                 ."WHERE a.Field_ID=b.Field_ID AND b.Table_ID=c.Table_ID AND c.Project_ID=:p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($f_id, $l_id);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $f_id = $mysqli->real_escape_string($f_id);
-                        $l_id = $mysqli->real_escape_string($l_id);
+                        $f_id = $d->escapeString($row[0]);
+                        $l_id = $d->escapeString($row[1]);
 
-                        $file_contents .= 'INSERT INTO `table_fields_list`(Field_ID, List_ID) VALUES';
+                        $file_contents .= 'INSERT INTO table_fields_list(Field_ID, List_ID) VALUES';
                         $file_contents .= "('" . $f_id . "', '" . $l_id . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_fields_list`: " . $stmt->error);
+                    die("Export query error for `table_fields_list`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
 
                 //Table Fields List Source Select
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT a.Field_ID, a.Auto_ID, a.Select_Field_ID, a.Display "
-                                 ."FROM `table_fields_list_source_select` a, `table_fields` b, `table` c "
-                                 ."WHERE a.Field_ID=b.Field_ID AND b.Table_ID=c.Table_ID AND c.Project_ID=?"))
+                if($stmt = $d->prepare("SELECT a.Field_ID, a.Auto_ID, a.Select_Field_ID, a.Display "
+                                 ."FROM table_fields_list_source_select a, table_fields b, \"table\" c "
+                                 ."WHERE a.Field_ID=b.Field_ID AND b.Table_ID=c.Table_ID AND c.Project_ID=:p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($f_id, $auto_id, $sf_id, $display);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $f_id = $mysqli->real_escape_string($f_id);
-                        $auto_id = $mysqli->real_escape_string($auto_id);
-                        $sf_id = $mysqli->real_escape_string($sf_id);
-                        $display = $mysqli->real_escape_string($display);
+                        $f_id    = $d->escapeString($row[0]);
+                        $auto_id = $d->escapeString($row[1]);
+                        $sf_id   = $d->escapeString($row[2]);
+                        $display = $d->escapeString($row[3]);
 
-                        $file_contents .= 'INSERT INTO `table_fields_list_source_select`'
+                        $file_contents .= 'INSERT INTO table_fields_list_source_select'
                                          .'(Field_ID, Auto_ID, Select_Field_ID, Display) VALUES';
                         $file_contents .= "('" . $f_id . "', '" . $auto_id . "', '" . $sf_id . "', '" . $display . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_fields_list_source_select`: " . $stmt->error);
+                    die("Export query error for `table_fields_list_source_select`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Table Fields List Source Where
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT a.Field_ID, a.Where_Field_ID, a.Where_Field_Operand, a.Where_Field_Value, a.Where_Field_Connector "
-                                 ."FROM `table_fields_list_source_where` a, `table_fields` b, `table` c "
-                                 ."WHERE a.Field_ID=b.Field_ID AND b.Table_ID=c.Table_ID AND c.Project_ID=?"))
+                if($stmt = $d->prepare("SELECT a.Field_ID, a.Where_Field_ID, a.Where_Field_Operand, a.Where_Field_Value, a.Where_Field_Connector "
+                                 ."FROM table_fields_list_source_where a, table_fields b, \"table\" c "
+                                 ."WHERE a.Field_ID=b.Field_ID AND b.Table_ID=c.Table_ID AND c.Project_ID = :p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($f_id, $wf_id, $wfo, $wfv, $wfc);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $f_id = $mysqli->real_escape_string($f_id);
-                        $wf_id = $mysqli->real_escape_string($wf_id);
-                        $wfo = $mysqli->real_escape_string($wfo);
-                        $wfv = $mysqli->real_escape_string($wfv);
-                        $wfc = $mysqli->real_escape_string($wfc);
+                        $f_id  = $d->escapeString($row[0]);
+                        $wf_id = $d->escapeString($row[1]);
+                        $wfo   = $d->escapeString($row[2]);
+                        $wfv   = $d->escapeString($row[3]);
+                        $wfc   = $d->escapeString($row[4]);
 
-                        $file_contents .= 'INSERT INTO `table_fields_list_source_where`'
+                        $file_contents .= 'INSERT INTO table_fields_list_source_where'
                                          .'(Field_ID, Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector) VALUES';
                         $file_contents .= "('" . $f_id . "', '" . $wf_id . "', '" . $wfo . "', '" . $wfv .  "', '" . $wfc  . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_fields_list_source_where`: " . $stmt->error);
+                    die("Export query error for `table_fields_list_source_where`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Table Pages
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT a.Table_ID, a.Page_ID, a.`Path_Filename` "
-                                 ."FROM `table_pages` a, `table` b WHERE a.Table_ID=b.Table_ID AND b.Project_ID=?"))
+                if($stmt = $d->prepare("SELECT a.Table_ID, a.Page_ID, a.Path_Filename "
+                                 ."FROM table_pages a, \"table\" b WHERE a.Table_ID=b.Table_ID AND b.Project_ID = :p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($t_id, $p_id, $path_filename);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $t_id = $mysqli->real_escape_string($t_id);
-                        $p_id = $mysqli->real_escape_string($p_id);
-                        $path_filename = $mysqli->real_escape_string($path_filename);
+                        $t_id   = $d->escapeString($row[0]);
+                        $p_id   = $d->escapeString($row[1]);
+                        $p_file = $d->escapeString($row[2]);
 
-                        $file_contents .= 'INSERT INTO `table_pages`'
+                        $file_contents .= 'INSERT INTO table_pages'
                                          .'(Table_ID, Page_ID, Path_Filename) VALUES';
-                        $file_contents .= "('" . $t_id . "', '" . $p_id . "', '" . $path_filename . "');" . "\r\n";
+                        $file_contents .= "('" . $t_id . "', '" . $p_id . "', '" . $p_file . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_pages`: " . $stmt->error);
+                    die("Export query error for `table_pages`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Table Relations
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT Relation_ID, Relation, Parent_Field_ID, Child_Field_ID, Label, Child_Field_Subtext "
-                                 ."FROM `table_relations` WHERE Project_ID=?"))
+                if($stmt = $d->prepare("SELECT Relation_ID, Relation, Parent_Field_ID, Child_Field_ID, Label, Child_Field_Subtext "
+                                 ."FROM table_relations WHERE Project_ID = :p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($r_id, $relation, $pf_id, $cf_id, $label, $cf_sub);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $r_id = $mysqli->real_escape_string($r_id);
-                        $relation = $mysqli->real_escape_string($relation);
-                        $pf_id = $mysqli->real_escape_string($pf_id);
-                        $cf_id = $mysqli->real_escape_string($cf_id);
-                        $label = $mysqli->real_escape_string($label);
-                        $cf_sub = $mysqli->real_escape_string($cf_sub);
+                        $r_id     = $d->escapeString($row[0]);
+                        $relation = $d->escapeString($row[1]);
+                        $pf_id    = $d->escapeString($row[2]);
+                        $cf_id    = $d->escapeString($row[3]);
+                        $label    = $d->escapeString($row[4]);
+                        $cf_sub   = $d->escapeString($row[5]);
 
-                        $file_contents .= 'INSERT INTO `table_relations`(Relation_ID, Project_ID, Relation, Parent_Field_ID, Child_Field_ID, Label, Child_Field_Subtext) VALUES';
+                        $file_contents .= 'INSERT INTO table_relations(Relation_ID, Project_ID, Relation, Parent_Field_ID, Child_Field_ID, Label, Child_Field_Subtext) VALUES';
                         $file_contents .= "('" . $r_id . "', '" . $Project_ID . "', '" . $relation . "', "
                                          . "'" . $pf_id . "', '" . $cf_id . "', '" . $label . "', '" . $cf_sub . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_relations`: " . $stmt->error);
+                    die("Export query error for `table_relations`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Predefined Lists
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT List_ID, List_Name, Remarks "
-                                 ."FROM `table_fields_predefined_list` WHERE Project_ID=?"))
+                if($stmt = $d->prepare("SELECT List_ID, List_Name, Remarks FROM table_fields_predefined_list WHERE Project_ID = :p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($l_id, $l_name, $remarks);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $l_id = $mysqli->real_escape_string($l_id);
-                        $l_name = $mysqli->real_escape_string($l_name);
-                        $remarks = $mysqli->real_escape_string($remarks);
+                        $l_id    = $d->escapeString($row[0]);
+                        $l_name  = $d->escapeString($row[1]);
+                        $remarks = $d->escapeString($row[2]);
 
-                        $file_contents .= 'INSERT INTO `table_fields_predefined_list`(List_ID, Project_ID, List_Name, Remarks) VALUES';
-                        $file_contents .= "('" . $l_id . "', '" . $Project_ID . "', '" . $l_name . "', "
-                                         . "'" . $remarks . "');" . "\r\n";
+                        $file_contents .= 'INSERT INTO table_fields_predefined_list(List_ID, Project_ID, List_Name, Remarks) VALUES';
+                        $file_contents .= "('" . $l_id . "', '" . $Project_ID . "', '" . $l_name . "', '" . $remarks . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_fields_predefined_list`: " . $stmt->error);
+                    die("Export query error for `table_fields_predefined_list`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
 
                 //Predefined List Items
                 $file_contents='';
-                $stmt =  $mysqli->stmt_init();
-                if($stmt->prepare("SELECT a.List_ID, a.Number, a.List_Item "
-                                 ."FROM `table_fields_predefined_list_items` a, `table_fields_predefined_list` b "
-                                 ."WHERE a.List_ID=b.List_ID AND b.Project_ID=?"))
+                if($stmt = $d->prepare("SELECT a.List_ID, a.Number, a.List_Item "
+                                 ."FROM table_fields_predefined_list_items a, table_fields_predefined_list b "
+                                 ."WHERE a.List_ID=b.List_ID AND b.Project_ID = :p_id"))
                 {
-                    $stmt->bind_param('s', $_SESSION['Project_ID']);
-                    $stmt->execute();
-                    $stmt->bind_result($l_id, $num, $item);
-                    while($stmt->fetch())
+                    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                    $result = $stmt->execute();
+                    while($row = $result->fetchArray(SQLITE3_NUM))
                     {
-                        $l_id = $mysqli->real_escape_string($l_id);
-                        $num = $mysqli->real_escape_string($num);
-                        $item = $mysqli->real_escape_string($item);
+                        $l_id = $d->escapeString($row[0]);
+                        $num  = $d->escapeString($row[1]);
+                        $item = $d->escapeString($row[2]);
 
-                        $file_contents .= 'INSERT INTO `table_fields_predefined_list_items`(List_ID, Number, List_Item) VALUES';
+                        $file_contents .= 'INSERT INTO table_fields_predefined_list_items(List_ID, Number, List_Item) VALUES';
                         $file_contents .= "('" . $l_id . "', '" . $num . "', '" . $item . "');" . "\r\n";
                     }
-                    $stmt->close();
                 }
                 else
                 {
-                    die("Export query error for `table_fields_predefined_list_items`: " . $stmt->error);
+                    die("Export query error for `table_fields_predefined_list_items`: " . $d->lastErrorMsg());
                 }
+                $stmt->close();
                 $file_contents .= "\r\n\r\n";
                 fwrite($sqlfile, $file_contents);
-
-
                 chmod($filename, 0777);
-
                 $export_status = 'success';
             }
             else

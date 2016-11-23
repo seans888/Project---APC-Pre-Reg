@@ -4,16 +4,15 @@ init_SCV2();
 
 if(isset($_GET['First_Run']))
 {
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `Project_Name`, `Client_Name`, `Project_Description`, `Base_Directory`, `Database_Connection_ID` 
-                            FROM `project` 
-                            WHERE `Project_ID`='$_SESSION[Project_ID]'");
-    if($result = $mysqli->use_result())
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT Project_Name, Client_Name, Project_Description, Base_Directory, Database_Connection_ID
+                            FROM project WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
 }
 if(xsrf_guard())
 {
@@ -25,22 +24,25 @@ if(xsrf_guard())
         header("location: " . HOME_PAGE);
         exit();
     }
-    
+
     if($_POST['btnSubmit'])
     {
         extract($_POST);
         init_var($Database_Connection_ID);
-        $errMsg = scriptCheckIfNull('Project Name', $Project_Name, 
+        $errMsg = scriptCheckIfNull('Project Name', $Project_Name,
                                     'Client Name', $Client_Name,
                                     'Description', $Project_Description,
                                     'Base Directory', $Base_Directory,
                                     'Database Connection', $Database_Connection_ID);
-                                    
+
         if($errMsg=="")
         {
-            $select = "SELECT `Project_ID` FROM `project` WHERE `Project_Name`='$Project_Name' AND `Project_ID`!='$Orig_Project_ID'"; 
+            $d = connect_DB();
+            $stmt = $d->prepare("SELECT Project_ID FROM project WHERE Project_Name=:p_name AND Project_ID !=:p_id");
+            $stmt->bindValue(':p_name', $Project_Name);
+            $stmt->bindValue(':p_id', $Orig_Project_ID);
             $error = "The project name '$Project_Name' already exists. Please choose a new one. <br>";
-            $errMsg = scriptCheckIfUnique($select, $error);
+            $errMsg = scriptCheckIfUnique($stmt, $error);
 
             if($errMsg=="")
             {
@@ -63,7 +65,7 @@ Modify Project Data
 
 <fieldset class="middle">
 <table class="input_form">
-<?php 
+<?php
 drawTextField('Project Name', 'Project_Name');
 drawTextField('Client Name', 'Client_Name');
 drawTextField('Base Directory', 'Base_Directory');

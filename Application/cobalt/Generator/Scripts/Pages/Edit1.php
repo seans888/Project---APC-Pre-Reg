@@ -143,27 +143,41 @@ for($a=0;$a<$field_count;$a++)
 $Child_Table_Add_Script    = '';
 $Child_Table_Select_Script = '';
 $multifield_controls       = '';
-$mysqli->real_query("SELECT a.Child_Field_ID, `child`.Field_Name, `parent`.Field_Name as `Parent_Field_Name`
-                        FROM `table_relations` a
-                            LEFT JOIN `table_fields` `parent` ON a.Parent_Field_ID = `parent`.Field_ID
-                            LEFT JOIN `table_fields` `child` ON a.Child_Field_ID = `child`.Field_ID
+$stmt = $d->prepare("SELECT a.Child_Field_ID, child.Field_Name, parent.Field_Name as Parent_Field_Name
+                        FROM table_relations a
+                            LEFT JOIN table_fields parent ON a.Parent_Field_ID = parent.Field_ID
+                            LEFT JOIN table_fields child ON a.Child_Field_ID = child.Field_ID
                         WHERE a.Relation='ONE-to-MANY' AND
-                              `parent`.Table_ID = '$Table_ID'");
-if($result = $mysqli->store_result())
+                              parent.Table_ID = :t_id");
+$stmt->bindValue(':t_id', $Table_ID);
+if($result = $stmt->execute())
 {
-    $num_child_tables = $result->num_rows;
-
-    for($a=0; $a<$num_child_tables; $a++)
+    $num_child_tables = 0;
+    $arr_rel_data = array();
+    while($data = $result->fetchArray(SQLITE3_NUM))
     {
-        $data = $result->fetch_row();
+        $arr_rel_data[] = $data;
+        ++$num_child_tables;
+    }
+}
+$stmt->close();
+
+if($num_child_tables > 0) //We only had to keep this counter instead of going straight to a foreach is to keep the previous (pre-refactoring) indentations due to all the heredocs inside this block
+{
+    foreach($arr_rel_data as $data)
+    {
         $Child_Field_ID = $data[0];
         $Child_Field_Name = $data[1];
         $Parent_Field_Name = $data[2];
 
-        $mysqli2->real_query("SELECT a.Table_Name, a.Table_ID FROM `table` a, `table_fields` b WHERE b.Field_ID='$Child_Field_ID' AND b.Table_ID=a.Table_ID");
-        if($result2 = $mysqli2->store_result())
-            $data = $result2->fetch_row();
-        else die("Error getting child table name and ID: " . $mysqli2->error);
+        $stmt = $d->prepare("SELECT a.Table_Name, a.Table_ID FROM \"table\" a, table_fields b
+                                WHERE b.Field_ID=:f_id AND b.Table_ID=a.Table_ID");
+        $stmt->bindValue(':f_id', $Child_Field_ID);
+        if($result = $stmt->execute())
+        {
+            $data = $result->fetchArray(SQLITE3_NUM);
+        }
+        $stmt->close();
 
         $Child_Table_Name = $data[0];
         $Child_Table_ID = $data[1];
@@ -172,27 +186,28 @@ if($result = $mysqli->store_result())
         $Child_Particulars_Count = $Child_Table_Name . '_count' ; //The specialized '$particularsCount' variable.
         $Child_Table_Add_Method = 'add';
         $Child_Table_Del_Method = 'delete_many';
+        $Child_DB_Handle = '$dbh_' . str_replace(' ', '_', $Child_Table_Name);
 
         //We need to see if the child field has any field designated as 'Date Controls', so we can assemble the date value for it.
         $Child_Date_Field_Assembly = '';
 
-        $mysqli2->real_query("SELECT Field_Name FROM `table_fields` WHERE Table_ID='$Child_Table_ID' AND Control_Type='Date Controls'");
-        if($result2 = $mysqli2->store_result())
+        $stmt = $d->prepare("SELECT Field_Name FROM table_fields WHERE Table_ID=:t_id AND Control_Type='date controls'");
+        $stmt->bindValue(':t_id', $Child_Table_ID);
+        if($result = $stmt->execute())
         {
-            $num_date_child_fields = $result2->num_rows;
-            for($b=0; $b<$num_date_child_fields; ++$b)
+            while($data = $result->fetchArray())
             {
-                $data2 = $result2->fetch_assoc();
-                extract($data2);
+                extract($data);
                 $Child_Date_Field_Assembly .= '$cf_' . $Child_Table_Name . '_' . $Field_Name . '[$a] = $cf_' . $Child_Table_Name . '_' . $Field_Name . '_year[$a] . \'-\' . $cf_' . $Child_Table_Name . '_' . $Field_Name . '_month[$a] . \'-\' . $cf_' . $Child_Table_Name . '_' . $Field_Name . '_day[$a];' .
 "\r\n               ";
             }
         }
+        $stmt->close();
 
         $Child_Table_Add_Script.=<<<EOD
             require_once 'subclasses/$Child_Classfile';
-            {$dbh_name} = new $Child_Table_Name;
-            {$dbh_name}->$Child_Table_Del_Method(\$arr_form_data);
+            {$Child_DB_Handle} = new $Child_Table_Name;
+            {$Child_DB_Handle}->$Child_Table_Del_Method(\$arr_form_data);
 
             for(\$a=0; \$a<\$$Child_Particulars_Count;\$a++)
             {
@@ -212,19 +227,18 @@ EOD;
         $Child_Table_Set_Fields='';
         $Child_Table_Fields_Assignment='';
 
-        $mysqli2->real_query("SELECT Field_ID AS 'Child_Field_ID', Field_Name, Attribute, Auto_Increment, Control_Type, Label FROM `table_fields` WHERE Table_ID='$Child_Table_ID'");
-        if($result2 = $mysqli2->store_result())
+        $stmt = $d->prepare("SELECT Field_ID AS Child_Field_ID, Field_Name, Attribute, Auto_Increment, Control_Type, Label
+                                FROM table_fields WHERE Table_ID=:t_id");
+        $stmt->bindValue(':t_id', $Child_Table_ID);
+        if($result = $stmt->execute())
         {
-            $num_child_fields = $result2->num_rows;
-
             $inner_cntr = 0;
-            for($b=0; $b<$num_child_fields; ++$b)
+            while($data = $result->fetchArray())
             {
-                $data2 = $result2->fetch_assoc();
-                extract($data2);
+                extract($data);
 
                 $Field_Var = '';
-                if($Attribute=='primary key' && $Auto_Increment == 'Y')
+                if($Attribute=='primary key' && $Auto_Increment == 'TRUE')
                 {
                     //Do nothing... ignore all auto_id's.
                 }
@@ -283,8 +297,7 @@ EOD;
                 }
             }
         }
-        else die("Oops... we got an error! ". $mysqli2->error);
-        $result2->close();
+        $stmt->close();
 
         $Child_Table_Add_Script = substr($Child_Table_Add_Script, 0, strlen($Child_Table_Add_Script) - 2); //Removed the last newline and comma.
 
@@ -292,7 +305,7 @@ EOD;
         $Child_Table_Add_Script.=<<<EOD
 
                               );
-                {$dbh_name}->$Child_Table_Add_Method(\$param);
+                {$Child_DB_Handle}->$Child_Table_Add_Method(\$param);
             }
 
 
@@ -303,12 +316,12 @@ EOD;
 
         $Child_Table_Select_Script.=<<<EOD
 require_once 'subclasses/$Child_Classfile';
-{$dbh_name} = new $Child_Table_Name;
-{$dbh_name}->set_fields('$Child_Table_Set_Fields');
-{$dbh_name}->set_where("$Child_Table_Where_Clause");
-if(\$result = {$dbh_name}->make_query()->result)
+{$Child_DB_Handle} = new $Child_Table_Name;
+{$Child_DB_Handle}->set_fields('$Child_Table_Set_Fields');
+{$Child_DB_Handle}->set_where("$Child_Table_Where_Clause");
+if(\$result = {$Child_DB_Handle}->make_query()->result)
 {
-    \$$Child_Num_Particulars = {$dbh_name}->num_rows;
+    \$$Child_Num_Particulars = {$Child_DB_Handle}->num_rows;
     for(\$a=0; \$a<\$$Child_Num_Particulars; \$a++)
     {
         \$data = \$result->fetch_row();
@@ -358,10 +371,17 @@ EOD;
                     break;
 
                 case "drop-down list":
-                    $mysqli2->real_query("SELECT List_ID FROM table_fields_list WHERE Field_ID='{$Child_Table_Fields_Info['Field_ID'][$b]}'");
-                    if($result2 = $mysqli2->store_result())
+                    $stmt = $d->prepare("SELECT List_ID FROM table_fields_list WHERE Field_ID=:f_id");
+                    $stmt->bindValue(':f_id', $Child_Table_Fields_Info['Field_ID'][$b]);
+                    if($result = $stmt->execute())
                     {
-                        if($result2->num_rows > 0)
+                        $num_rows = 0;
+                        while($data = $result->fetchArray())
+                        {
+                            ++$num_rows;
+                        }
+
+                        if($num_rows > 0)
                         {
                             $options = $Child_Table_Fields_Info['Field_Name'][$b] . '_array_options';
                             $USE_MULTIFIELD_SETUP = 'Predefined List';
@@ -389,7 +409,8 @@ EOD;
 EOD;
                         }
                     }
-                    else die('Error checking for a predefined list while determining child field control type: ' . $mysqli2->error);
+                    else die('Error checking for a predefined list while determining child field control type: ' . $d->lastErrorMsg);
+                    $stmt->close();
                 default: break;
             }
 
@@ -426,8 +447,7 @@ EOD;
         unset($Child_Table_Fields_Info);
     }
 }
-else die("Error in main query: " . $mysqli->error);
-$result->close();
+
 
 //Create helper "form_data_" file (unifies form data fetching for detailview/edit/delete
 $helper_file_name[0] = 'form_data_' . $class_name . '.php';
@@ -496,9 +516,9 @@ $Upload_Controls_Script
 
         if(\$message=="")
         {
+$Child_Table_Add_Script
             {$dbh_name}->$edit_method(\$arr_form_data);
 
-$Child_Table_Add_Script
             redirect("$List_View_Page?\$query_string");
         }
     }
@@ -518,7 +538,7 @@ $script_content.=<<<EOD
 
 require 'subclasses/$html_subclass_file';
 \$html = new $html_subclass_name;
-\$html->draw_header('$page_title', \$message, \$message_type$Extra_Flags);
+\$html->draw_header('Edit %%', \$message, \$message_type$Extra_Flags);
 \$html->draw_listview_referrer_info(\$filter_field_used, \$filter_used, \$page_from, \$filter_sort_asc, \$filter_sort_desc);
 $Hidden_Primary_Keys
 $Hidden_Orig_Primary_Keys

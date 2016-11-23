@@ -11,8 +11,9 @@ if(xsrf_guard())
     }
 }
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT DB_Connection_ID, DB_Connection_Name, Hostname, Username FROM database_connection WHERE Project_ID='$_SESSION[Project_ID]'");
+$d = connect_DB();
+$stmt = $d->prepare("SELECT DB_Connection_ID, DB_Connection_Name, Hostname, Username FROM database_connection WHERE Project_ID=:p_id");
+$stmt->bindValue(':p_id', $_SESSION['Project_ID']);
 
 drawHeader();
 drawPageTitle('List View: Database Connections', $errMsg);
@@ -28,29 +29,26 @@ drawPageTitle('List View: Database Connections', $errMsg);
 </tr>
 
 <?php
-    if($result = $mysqli->use_result())
+    if($result = $stmt->execute())
     {
         $a=0;
         $class='';
-        while($row = $result->fetch_assoc())
+        while($row = $result->fetchArray())
         {
             extract($row);
             if($a%2 == 0) $class='listRowEven';
             else $class='listRowOdd';
-            
+
             $DB_Connection_ID = rawurlencode($DB_Connection_ID);
             echo "<tr class=$class><td align=center><a href='DetailView_DBConnections.php?DB_Connection_ID=$DB_Connection_ID'><img src='../images/view.png' alt='View' title='View'></a>"
                 ."&nbsp;&nbsp;<a href='Edit_DBConnections.php?DB_Connection_ID=$DB_Connection_ID'><img src='../images/edit.png' alt='Edit' title='Edit'></a>"
                 ."&nbsp;&nbsp;<a href='Del_DBConnections.php?DB_Connection_ID=$DB_Connection_ID'><img src='../images/delete.png' alt='Delete' title='Delete'></a></td>";
 
-            printf("<td>%s</td><td>%s</td><td>%s</td></tr>\n", 
+            printf("<td>%s</td><td>%s</td><td>%s</td></tr>\n",
                     $row['DB_Connection_Name'], $row['Hostname'], $row['Username']);
-                    
-            $a++;
+            ++$a;
         }
-        $result->close();
     }
-    else die($mysqli->error);
 ?>
 </table>
 <?php drawButton('CANCEL');?>

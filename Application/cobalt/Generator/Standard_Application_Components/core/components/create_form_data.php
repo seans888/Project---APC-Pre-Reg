@@ -8,7 +8,7 @@ if($$object_name != '' && is_object($$object_name))
         {
             $arr_form_data[$field_name] = $_POST[$field_name];
         }
-        
+
         if($metadata['control_type'] == 'date controls')
         {
             $var_year_element  = $metadata['date_elements'][0];
@@ -46,7 +46,14 @@ if($$object_name != '' && is_object($$object_name))
     {
         if($rel_info['type'] == '1-M')
         {
-            $child = cobalt_load_class($rel_info['table'] . '_html');
+            if(isset($arr_child[$rel_info['table']]))
+            {
+                $child = $arr_child[$rel_info['table']];
+            }
+            else
+            {
+                $child = cobalt_load_class($rel_info['table'] . '_html');
+            }
 
             $num_var = 'num_' . $child->table_name;
             $count_var = $child->table_name . '_count';
@@ -64,7 +71,7 @@ if($$object_name != '' && is_object($$object_name))
             foreach($child->fields as $field_name=>$metadata)
             {
                 $cf_name = 'cf_' . $child->table_name . '_' . $field_name;
-            
+
                 if(isset($_POST[$cf_name]))
                 {
                     $arr_form_data[$cf_name] = $_POST[$cf_name];

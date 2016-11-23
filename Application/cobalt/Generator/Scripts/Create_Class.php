@@ -10,7 +10,7 @@
 //Additional (version 1.0+ specific) This also creates a _HTML subclass for each table, which extends the base
 //HTML class instead of the Data_Abstraction class.
 
-function createClass($Table_ID, $subclass_path, $mysqli, $mysqli_2, $inner_db_handle, $num_databases)
+function createClass($Table_ID, $subclass_path, $num_databases)
 {
     //PHASE 1: Creating the $fields array.
     //The structure of the $fields array is pretty simple. This array is a multidimensional array that contains all
@@ -32,271 +32,229 @@ function createClass($Table_ID, $subclass_path, $mysqli, $mysqli_2, $inner_db_ha
     //only has 4 settings/values (Value, Data_Type, Length, Attribute), which certainly isn't the case as there are a few more.
 
     //Prep: get table info
-    $mysqli->real_query("SELECT Table_Name FROM `table` WHERE Table_ID='$Table_ID'");
-    if($result = $mysqli->use_result())
+    $d = connect_DB();
+    $stmt  = $d->prepare("SELECT Table_Name FROM \"table\" WHERE Table_ID=:t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
     // 1.1 - Create empty class files. If one or both of the files already exist, delete them first.
     //Note: as of 2012-11-18, creation of empty class files have been postponed until right before the fwrite call.
-
+    //FIXME: Since edit noted above, query above and below can probably be merged into one.
 
     // 1.2 - Query all field information.
     // 1.2.1 - Generic field information.
-    $mysqli->real_query("SELECT Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Control_Type, Label, In_Listview, Auto_Increment
-                            FROM table_fields
-                            WHERE Table_ID='$Table_ID'
-                        ");
+    $stmt = $d->prepare("SELECT * FROM table_fields WHERE Table_ID=:t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $arr_metadata = array();
+    if($result = $stmt->execute())
+    {
+        while($row = $result->fetchArray())
+        {
+            $arr_metadata[] = $row;
+        }
+    }
+    $stmt->close();
 
     $field_array = array(); //array for aggregating all field names; useful later in method generation.
     $field_attribute_array = array(); //array for aggregating all field attributes; useful later in method generation.
     $field_control_array = array(); //array for aggregating all field control types; useful later in the edit method generation.
     $field_data_type_array = array(); //array for aggregating all field data types corresponding to [i,d,s,b]; useful later for the subclass generation that needs to assemble a prepared statement
-    if($result = $mysqli->store_result())
+    $fields = '$fields = array(';
+
+    foreach($arr_metadata as $row)
     {
-        $fields = '$fields = array(';
+        extract($row); //We only named this $row because it was named $row already before the refactoring that changed it into a foreach with $arr_metadata
 
-        while($row = $result->fetch_assoc())
+        $Label = addslashes($Label);
+        $Extra_Chars_Allowed = addslashes($Extra_Chars_Allowed);
+
+        if($Data_Type == 'integer')
         {
-            extract($row);
-
-            $Label = addslashes($Label);
-
-            $rpt_in_report        = 'TRUE';
-            $rpt_column_format    = 'normal';
-            $rpt_column_alignment = 'left';
-            $rpt_show_sum         = 'FALSE';
-
-            if($Data_Type == 'integer')
-            {
-                $char_set_method         = 'generate_num_set';
-                $extra_chars_allowed     = '-';
-                $char_set_allow_space    = 'FALSE';
-                $field_data_type_array[] = 'i';
-                $rpt_column_format       = 'number_format2';
-                $rpt_column_alignment    = 'right';
-                $rpt_show_sum            = 'TRUE';
-            }
-            elseif($Data_Type == 'double or float')
-            {
-                $char_set_method         = 'generate_num_set';
-                $extra_chars_allowed     = '- , .';
-                $char_set_allow_space    = 'FALSE';
-                $field_data_type_array[] = 'd';
-                $rpt_column_format       = 'number_format2';
-                $rpt_column_alignment    = 'right';
-                $rpt_show_sum            = 'TRUE';
-            }
-            else
-            {
-                //Normal input field, defaults to no filter.
-                //This is fine since every data will be used in prepared statements or checked and escaped properly.
-                $char_set_method         = '';
-                $extra_chars_allowed     = '';
-                $char_set_allow_space    = 'TRUE';
-                $field_data_type_array[] = 's';
-            }
-
-            //rpt column settings override: 'ID' fields of any sort (i.e., fields named like 'id', 'emp_id', 'id_number', etc)
-            //should be explicitly set to normal format (just in case their data type is int) and center alignment, and no sum.
-            if(strpos($Label, 'ID') !== FALSE)
-            {
-                $rpt_show_sum         = 'FALSE';
-                $rpt_column_format    = 'normal';
-                $rpt_column_alignment = 'center';
-            }
-
-            $Required='TRUE';
-            $Size = 0;
-            $Extra = '';
-            if($Control_Type=='none')
-            {
-                $Required='FALSE';
-            }
-            elseif($Control_Type=='textbox')
-            {
-                $Size = '60';
-            }
-            elseif($Control_Type=='textarea')
-            {
-                $Size = "'58;5'";
-            }
-
-            if(strtoupper($Nullable) == 'YES') $Nullable = 'TRUE';
-            else $Nullable = 'FALSE';
-
-            if(strtoupper($In_Listview) == 'YES') $In_Listview = 'TRUE';
-            else $In_Listview = 'FALSE';
-
-            $field_array[] = $Field_Name; //aggregate all field names into this array.
-            $field_attribute_array[] = $Attribute;
-            $field_control_array[] = $Control_Type;
-            $field_auto_increment_array[] = $Auto_Increment;
-            $fields .= <<<EOD
-
-                        '$Field_Name' => array('value'=>'',
-                                              'nullable'=>$Nullable,
-                                              'data_type'=>'$Data_Type',
-                                              'length'=>$Length,
-                                              'required'=>$Required,
-                                              'attribute'=>'$Attribute',
-                                              'control_type'=>'$Control_Type',
-                                              'size'=>$Size,
-                                              'upload_path'=>'',
-                                              'drop_down_has_blank'=>TRUE,
-                                              'label'=>'$Label',
-                                              'extra'=>'',
-                                              'companion'=>'',
-                                              'in_listview'=>$In_Listview,
-                                              'char_set_method'=>'$char_set_method',
-                                              'char_set_allow_space'=>$char_set_allow_space,
-                                              'extra_chars_allowed'=>'$extra_chars_allowed',
-                                              'allow_html_tags'=>FALSE,
-                                              'trim'=>'trim',
-                                              'valid_set'=>array()
-EOD;
-
-            $BYPASS_LIST_SOURCE = "NOT YET";
-
-            //1.2.2 - Check if necessary to create the necessary date controls elements
-            if($Control_Type == 'date controls')
-            {
-                $dc_year  = $Field_Name . '_year';
-                $dc_month = $Field_Name . '_month';
-                $dc_day   = $Field_Name . '_day';
-
-                $fields .= <<<EOD
-,
-                                              'date_elements'=>array('$dc_year','$dc_month','$dc_day')
-EOD;
-            }
-            else $fields .= <<<EOD
-,
-                                              'date_elements'=>array('','','')
-EOD;
-            $fields .= <<<EOD
-,
-                                              'date_default'=>''
-EOD;
-
-            // 1.2.3 - Check if "Predefined_List" is applicable .
-            if($Control_Type == "radio buttons" || $Control_Type == "drop-down list")
-            {
-                $mysqli_2->real_query("SELECT List_ID FROM table_fields_list WHERE Field_ID='$Field_ID'");
-                if($result_2 = $mysqli_2->store_result())
-                {
-                    if($result_2->num_rows > 0)
-                    {
-                        $data = $result_2->fetch_assoc();
-                        extract($data);
-
-                        $inner_db_handle->real_query("SELECT List_Item FROM table_fields_predefined_list_items WHERE List_ID='$List_ID'");
-                        if($inner_result = $inner_db_handle->use_result())
-                        {
-                            $list_items = '';
-                            while($data = $inner_result->fetch_row())
-                            {
-                                $data[0] = str_replace("'", "\'", $data[0]); //single quotes need escaping
-                                $list_items .=  "'$data[0]',";
-                            }
-                            $list_items = substr($list_items,0,strlen($list_items)-1); //Remove the last comma.
-                        }
-                        else die($inner_db_handle->error);
-                        $BYPASS_LIST_SOURCE = "YES, PLEASE BYPASS!";
-
-                        $fields .= <<<EOD
-,
-                                              'list_type'=>'predefined',
-                                              'list_settings'=>array('per_line'=>TRUE,
-                                                                     'items'  =>array($list_items),
-                                                                     'values' =>array($list_items))
-EOD;
-
-                    }
-                    $result_2->close();
-
-                }
-                else die($mysqli_2->error);
-            }
-            else $BYPASS_LIST_SOURCE = 'NOPE';
-
-            // 1.2.4 - Check if "List_Source_Select/Where" is applicable.
-            if($Control_Type == "drop-down list" && $BYPASS_LIST_SOURCE != "YES, PLEASE BYPASS!")
-            {
-                require_once 'ListFromSQL.php';
-                $settings = list_from_SQL_settings($Field_ID, $num_databases);
-
-                $fields .= <<<EOD
-,
-                                              'list_type'=>'sql generated',
-                                              'list_settings'=>array($settings)
-EOD;
-
-            }
-            elseif($BYPASS_LIST_SOURCE == 'NOPE') $fields .= <<<EOD
-,
-                                              'list_type'=>'',
-                                              'list_settings'=>array('')
-EOD;
-
-            //1.2.5 Adding the dictionary elements for the report feature
-            $fields .= <<<EOD
-,
-                                              'rpt_in_report'=>$rpt_in_report,
-                                              'rpt_column_format'=>'$rpt_column_format',
-                                              'rpt_column_alignment'=>'$rpt_column_alignment',
-                                              'rpt_show_sum'=>$rpt_show_sum
-EOD;
-
-            //Closing parenthesis - remember that each field info is in an array, right? Well,
-            //this is the closing parenthesis for that.
-            $fields .= '),';
+            $field_data_type_array[] = 'i';
         }
-        $result->close();
+        elseif($Data_Type == 'double or float')
+        {
+            $field_data_type_array[] = 'd';
+        }
+        else
+        {
+            //Normal input field, defaults to no filter.
+            //This is fine since every data will be used in prepared statements or checked and escaped properly.
+            $field_data_type_array[] = 's';
+        }
+
+        $field_array[] = $Field_Name; //aggregate all field names into this array.
+        $field_attribute_array[] = $Attribute;
+        $field_control_array[] = $Control_Type;
+        $field_auto_increment_array[] = $Auto_Increment;
+
+        $fields .= <<<EOD
+
+                    '$Field_Name' => array('value'=>'$Default_Value',
+                                          'nullable'=>$Nullable,
+                                          'data_type'=>'$Data_Type',
+                                          'length'=>$Length,
+                                          'required'=>$Required,
+                                          'attribute'=>'$Attribute',
+                                          'control_type'=>'$Control_Type',
+                                          'size'=>'$Size',
+                                          'drop_down_has_blank'=>$Drop_Down_Has_Blank,
+                                          'label'=>'$Label',
+                                          'extra'=>'$Extra',
+                                          'companion'=>'$Companion',
+                                          'in_listview'=>$In_Listview,
+                                          'char_set_method'=>'$Char_Set_Method',
+                                          'char_set_allow_space'=>$Char_Set_Allow_Space,
+                                          'extra_chars_allowed'=>'$Extra_Chars_Allowed',
+                                          'allow_html_tags'=>$Allow_HTML_Tags,
+                                          'trim'=>'$Trim_Value',
+                                          'valid_set'=>array()
+EOD;
+
+        $BYPASS_LIST_SOURCE = "NOT YET";
+
+        //1.2.2 - Check if necessary to create the necessary date controls elements
+        if($Control_Type == 'date controls')
+        {
+            $dc_year  = $Field_Name . '_year';
+            $dc_month = $Field_Name . '_month';
+            $dc_day   = $Field_Name . '_day';
+
+            $fields .= <<<EOD
+,
+                                          'date_elements'=>array('$dc_year','$dc_month','$dc_day')
+EOD;
+        }
+        else $fields .= <<<EOD
+,
+                                          'date_elements'=>array('','','')
+EOD;
+        $fields .= <<<EOD
+,
+                                          'date_default'=>'$Date_Default'
+EOD;
+
+        // 1.2.3 - Check if "Predefined_List" is applicable .
+        if($Control_Type == "radio buttons" || $Control_Type == "drop-down list")
+        {
+            $stmt = $d->prepare("SELECT List_ID FROM table_fields_list WHERE Field_ID=:f_id");
+            $stmt->bindValue(':f_id', $Field_ID);
+
+            $List_ID = '';
+            if($result = $stmt->execute())
+            {
+                $data = $result->fetchArray();
+                $List_ID = $data['List_ID'];
+            }
+            $stmt->close();
+
+            if($List_ID != '')
+            {
+                //FIXME: Perhaps this query and the one above should be merged using a properly JOINed query?
+                $stmt = $d->prepare("SELECT List_Item FROM table_fields_predefined_list_items WHERE List_ID=:l_id");
+                $stmt->bindValue(':l_id', $List_ID);
+
+                if($result = $stmt->execute())
+                {
+                    $list_items = '';
+                    while($data = $result->fetchArray())
+                    {
+                        $data[0] = str_replace("'", "\'", $data[0]); //single quotes need escaping
+                        $list_items .=  "'$data[0]',";
+                    }
+                    $list_items = substr($list_items,0,strlen($list_items)-1); //Remove the last comma.
+                }
+                $stmt->close();
+                $BYPASS_LIST_SOURCE = "YES, PLEASE BYPASS!";
+
+                $fields .= <<<EOD
+,
+                                      'list_type'=>'predefined',
+                                      'list_settings'=>array('per_line'=>TRUE,
+                                                             'items'  =>array($list_items),
+                                                             'values' =>array($list_items))
+EOD;
+            }
+        }
+        else $BYPASS_LIST_SOURCE = 'NOPE';
+
+        // 1.2.4 - Check if "List_Source_Select/Where" is applicable.
+        if($Control_Type == "drop-down list" && $BYPASS_LIST_SOURCE != "YES, PLEASE BYPASS!")
+        {
+            require_once 'ListFromSQL.php';
+            $settings = list_from_SQL_settings($Field_ID, $num_databases);
+
+            $fields .= <<<EOD
+,
+                                          'list_type'=>'sql generated',
+                                          'list_settings'=>array($settings)
+EOD;
+
+        }
+        elseif($BYPASS_LIST_SOURCE == 'NOPE') $fields .= <<<EOD
+,
+                                          'list_type'=>'',
+                                          'list_settings'=>array('')
+EOD;
+
+        //1.2.5 Adding the dictionary elements for the report feature
+        $fields .= <<<EOD
+,
+                                          'rpt_in_report'=>$RPT_In_Report,
+                                          'rpt_column_format'=>'$RPT_Column_Format',
+                                          'rpt_column_alignment'=>'$RPT_Column_Alignment',
+                                          'rpt_show_sum'=>$RPT_Show_Sum
+EOD;
+
+        //Closing parenthesis - remember that each field info is in an array, right? Well,
+        //this is the closing parenthesis for that.
+        $fields .= '),';
     }
-    else die($mysqli->error);
 
     $fields = substr($fields,0, strlen($fields)-1);
     $fields .= "\r\n                       );"; //This line prints the closing ');' aligned with the opening '('.
 
 
     //PHASE 2: Creating the Database Connection variables.
-    //Just query for the Hostname, Username, Password and Database of the connection specified in the current table.
-    init_var($database_connection_variables);
-    $mysqli->real_query("SELECT a.DB_Connection_ID, a.Hostname, a.Username, a.Password, a.Database
-                            FROM `database_connection` a, `table` b
-                            WHERE a.DB_Connection_ID = b.DB_Connection_ID AND
-                                  b.Table_ID = '$Table_ID'
-                        ");
-    if($result = $mysqli->use_result())
+    //Get the default database connection details
+    $stmt = $d->prepare("SELECT a.DB_Connection_ID, a.Hostname, a.Username, a.Password, a.Database
+                            FROM database_connection a, project b
+                            WHERE a.DB_Connection_ID = b.Database_Connection_ID AND
+                                  b.Project_ID = :p_id");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray(SQLITE3_NUM);
+        $def_DBCon = $data[0];
+        $def_Host  = $data[1];
+        $def_User  = $data[2];
+        $def_Pass  = $data[3];
+        $def_DB    = $data[4];
+    }
+    $stmt->close();
+
+    //Query for the Hostname, Username, Password and Database of the connection specified in the current table.
+    init_var($database_connection_variables);
+    $stmt = $d->prepare("SELECT a.DB_Connection_ID, a.Hostname, a.Username, a.Password, a.Database
+                            FROM database_connection a, \"table\" b
+                            WHERE a.DB_Connection_ID = b.DB_Connection_ID AND
+                                  b.Table_ID = :t_id");
+    $stmt->bindValue(':t_id', $Table_ID);
+
+    if($result = $stmt->execute())
+    {
+        $data = $result->fetchArray();
         extract($data);
 
         //Check if this is the project's default connection;
         //If not, check if some values are the same.
         //All values that are identical will not be overridden by the subclass.
-        $mysqli_2->real_query("SELECT a.DB_Connection_ID, a.Hostname, a.Username, a.Password, a.Database
-                                FROM `database_connection` a, `project` b
-                                WHERE a.DB_Connection_ID = b.Database_Connection_ID AND
-                                      b.Project_ID = '$_SESSION[Project_ID]'
-                            ");
-        if($result_2 = $mysqli_2->use_result())
-        {
-            $data = $result_2->fetch_row();
-            $def_DBCon = $data[0];
-            $def_Host = $data[1];
-            $def_User = $data[2];
-            $def_Pass = $data[3];
-            $def_DB = $data[4];
-        }
-        else die('Error while trying to get the default connection: ' . $mysql2->error);
-        $result_2->close();
-
         if($def_DBCon != $DB_Connection_ID)
         {
             if($def_Host !=  $Hostname)
@@ -335,8 +293,7 @@ EOD;
             }
         }
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
     //We also need to get the relationships of this table/class.
     //    $relations = array('1'=>array('Type'=>'1-1',
@@ -347,19 +304,32 @@ EOD;
     //                                      'Where_clause'=>''));
     $rel_index=0; //array index of relationships, should persist up to the M-1 section.
     $foreign_field = ''; //will hold the field name of the foreign_key field of the child ("M") in a 1-M relationship, if one exists for this table
-    $mysqli->real_query("SELECT a.`Relation_ID`, a.`Relation`, a.`Child_Field_ID`, a.`Child_Field_Subtext`,
-                                b.`Field_Name`
-                            FROM `table_relations` a, `table_fields` b
-                            WHERE (a.`Child_Field_ID` = b.`Field_ID` AND b.`Table_ID` = '$Table_ID' AND a.`Relation`='ONE-to-ONE') OR
-                                  (a.`Parent_Field_ID` = b.`Field_ID` AND b.`Table_ID` = '$Table_ID' AND a.`Relation`='ONE-to-MANY')");
-    if($result = $mysqli->store_result())
+    $stmt = $d->prepare("SELECT a.Relation_ID, a.Relation, a.Child_Field_ID, a.Child_Field_Subtext, b.Field_Name
+                            FROM table_relations a, table_fields b
+                            WHERE (a.Child_Field_ID = b.Field_ID AND b.Table_ID = :t_id AND a.Relation ='ONE-to-ONE') OR
+                                  (a.Parent_Field_ID = b.Field_ID AND b.Table_ID = :t2_id AND a.Relation ='ONE-to-MANY')");
+    $stmt->bindValue(':t_id', $Table_ID);
+    $stmt->bindValue(':t2_id', $Table_ID);
+
+    $arr_rel_data = array();
+    if($result = $stmt->execute())
     {
-        $relations = '$relations = array(';
-        $put_comma=FALSE;
-        for($a=1; $a<=$result->num_rows; $a++)
+        while($data = $result->fetchArray())
         {
-            $rel_index += $a;
-            $data = $result->fetch_assoc();
+            $arr_rel_data[] = $data; //FIXME: these can probably be just one line: while($arr_rel_data[] = $result->fetchArray());
+        }
+    }
+    $stmt->close();
+
+    $relations = '$relations = array(';
+    $put_comma=FALSE;
+    $rel_index = 0;
+
+    if(count($arr_rel_data) > 0)
+    {
+        foreach($arr_rel_data as $data)
+        {
+            ++$rel_index;
             extract($data);
 
             $Link_child = $Field_Name;
@@ -382,32 +352,30 @@ EOD;
             //Finally, get the involved table&field name
             if($Relation == '1-1')
             {
-                $mysqli_2->real_query("SELECT b.`Field_Name`, c.`Table_Name`
-                                            FROM `table_relations` a, `table_fields` b, `table` c
-                                            WHERE a.`Relation_ID` = '$Relation_ID' AND
-                                                  a.`Parent_Field_ID` = b.`Field_ID` AND
-                                                  b.`Table_ID` = c.`Table_ID`");
+                $stmt = $d->prepare("SELECT b.Field_Name, c.Table_Name
+                                            FROM table_relations a, table_fields b, \"table\" c
+                                            WHERE a.Relation_ID = :r_id AND
+                                                  a.Parent_Field_ID = b.Field_ID AND
+                                                  b.Table_ID = c.Table_ID");
+                $stmt->bindValue(':r_id', $Relation_ID);
             }
             elseif($Relation == '1-M')
             {
-                $mysqli_2->real_query("SELECT b.`Field_Name`, c.`Table_Name`
-                                            FROM `table_relations` a, `table_fields` b, `table` c
-                                            WHERE a.`Relation_ID` = '$Relation_ID' AND
-                                                  a.`Child_Field_ID` = b.`Field_ID` AND
-                                                  b.`Table_ID` = c.`Table_ID`");
+                $stmt = $d->prepare("SELECT b.Field_Name, c.Table_Name
+                                            FROM table_relations a, table_fields b, \"table\" c
+                                            WHERE a.Relation_ID = :r_id AND
+                                                  a.Child_Field_ID = b.Field_ID AND
+                                                  b.Table_ID = c.Table_ID");
+                $stmt->bindValue(':r_id', $Relation_ID);
             }
 
-            if($result_2 = $mysqli_2->store_result())
+            if($result = $stmt->execute())
             {
-                $data = $result_2->fetch_row();
+                $data = $result->fetchArray(SQLITE3_NUM);
                 $Involved_Field = $data[0];
                 $Involved_Table = $data[1];
-                $result_2->close();
             }
-            else
-            {
-                die($mysqli_2->error);
-            }
+            $stmt->close();
 
             if($Involved_Field == $Link_child)
             {
@@ -442,69 +410,71 @@ EOD;
             $put_comma = TRUE;
 
         }
-        $result->close();
 
         //Section above retrieved relationships of parent; this one retrieves relationships of a child (the "M") in a 1-M relationship
-        $mysqli->real_query("SELECT a.`Relation_ID`, a.`Relation`, a.`Child_Field_ID`, a.`Child_Field_Subtext`,
-                                    b.`Field_Name`
-                                FROM `table_relations` a, `table_fields` b
-                                WHERE a.`Child_Field_ID` = b.`Field_ID` AND b.`Table_ID` = '$Table_ID' AND a.`Relation`='ONE-to-MANY'");
-        if($result = $mysqli->store_result())
+        $stmt = $d->prepare("SELECT a.Relation_ID, a.Relation, a.Child_Field_ID, a.Child_Field_Subtext, b.Field_Name
+                                FROM table_relations a, table_fields b
+                                WHERE a.Child_Field_ID = b.Field_ID AND b.Table_ID = :t_id AND a.Relation='ONE-to-MANY'");
+        $stmt->bindValue(':t_id', $Table_ID);
+
+        $arr_child_data = array();
+        if($result = $stmt->execute())
         {
-            for($a=1; $a<=$result->num_rows; $a++)
+            while($data = $result->fetchArray())
             {
-                $rel_index += $a;
-                $data = $result->fetch_assoc();
-                extract($data);
-
-                $Link_child = $Field_Name;
-                //2014-12-03
-                //This will be used in PHASE 3, in case this Foreign Key connected to Parent is not defined as Primary Key.
-                $foreign_field = $Field_Name;
-
-                $mysqli_2->real_query("SELECT b.`Field_Name`, c.`Table_Name`
-                                            FROM `table_relations` a, `table_fields` b, `table` c
-                                            WHERE a.`Relation_ID` = '$Relation_ID' AND
-                                                  a.`Parent_Field_ID` = b.`Field_ID` AND
-                                                  b.`Table_ID` = c.`Table_ID`");
-
-                if($result_2 = $mysqli_2->store_result())
-                {
-                    $data = $result_2->fetch_row();
-                    $Involved_Field = $data[0];
-                    $Involved_Table = $data[1];
-                    $result_2->close();
-                }
-                else
-                {
-                    die($mysqli_2->error);
-                }
-
-                if($Involved_Field == $Link_child)
-                {
-                    $Alias = '';
-                }
-                else
-                {
-                    $Alias = $Link_child;
-                }
-
-                if($put_comma) $relations .= ",\n                           ";
-
-                $relations .= "array('type'=>'M-1',
-                                 'table'=>'$Involved_Table',
-                                 'alias'=>'$Alias',
-                                 'link_parent'=>'$Involved_Field',
-                                 'link_child'=>'$Link_child',
-                                 'minimum'=>1,
-                                 'where_clause'=>'')";
-
-                $put_comma = TRUE;
+                $arr_child_data[] = $data;
             }
         }
+        $stmt->close();
 
-        $relations .= ');';
+        $rel_index = 0;
+        foreach($arr_child_data as $data)
+        {
+            ++$rel_index;
+            extract($data);
+
+            $Link_child = $Field_Name;
+            //2014-12-03
+            //This will be used in PHASE 3, in case this Foreign Key connected to Parent is not defined as Primary Key.
+            $foreign_field = $Field_Name;
+
+            $stmt = $d->prepare("SELECT b.Field_Name, c.Table_Name
+                                        FROM table_relations a, table_fields b, \"table\" c
+                                        WHERE a.Relation_ID = :r_id AND
+                                              a.Parent_Field_ID = b.Field_ID AND
+                                              b.Table_ID = c.Table_ID");
+            $stmt->bindValue(':r_id', $Relation_ID);
+            if($result = $stmt->execute())
+            {
+                $data = $result->fetchArray(SQLITE3_NUM);
+                $Involved_Field = $data[0];
+                $Involved_Table = $data[1];
+            }
+            $stmt->close();
+
+            if($Involved_Field == $Link_child)
+            {
+                $Alias = '';
+            }
+            else
+            {
+                $Alias = $Link_child;
+            }
+
+            if($put_comma) $relations .= ",\n                           ";
+
+            $relations .= "array('type'=>'M-1',
+                             'table'=>'$Involved_Table',
+                             'alias'=>'$Alias',
+                             'link_parent'=>'$Involved_Field',
+                             'link_child'=>'$Link_child',
+                             'minimum'=>1,
+                             'where_clause'=>'')";
+
+            $put_comma = TRUE;
+        }
     }
+    $relations .= ');';
 
 
     //PHASE 3: Creating the subclass methods.
@@ -647,7 +617,7 @@ EOD;
         }
         elseif(($field_attribute_array[$a] == "primary key" || $field_attribute_array[$a] == "primary&foreign key") && $field_control_array[$a] == 'none')
         {
-            if(strtoupper($field_auto_increment_array[$a]) == 'Y')
+            if(strtoupper($field_auto_increment_array[$a]) == 'TRUE')
             {
                 $edit_primary_key_list .= $field_array[$a] . " = ? AND ";
                 $parameterized_edit_field_list_for_keys .= "\r\n" . "                                 " . '&$this->fields[' . "'" .  "$field_array[$a]'" . '][\'value\'],';
@@ -930,7 +900,7 @@ EOD;
     $session_array_name = strtoupper($Table_Name) . '_REPORT_CUSTOM';
     $result_page = 'reporter_result_' . $Table_Name . '.php';
     $cancel_page = 'listview_' . $Table_Name . '.php';
-    $report_title = ucwords(str_replace('_',' ',$Table_Name)) . ': Custom Reporting Tool';
+    $report_title = '%%: Custom Reporting Tool';
     $pdf_reporter_filename = 'reporter_pdfresult_' . $Table_Name . '.php';
 
     $subclass_content = <<<EOD

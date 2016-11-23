@@ -11,8 +11,9 @@ if(xsrf_guard())
     }
 }
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT Table_ID, Table_Name, Remarks FROM `table` WHERE `Project_ID`='$_SESSION[Project_ID]' ORDER BY `Table_Name`");
+$d = connect_DB();
+$stmt = $d->prepare("SELECT Table_ID, Table_Name, Remarks FROM \"table\" WHERE Project_ID=:p_id ORDER BY Table_Name");
+$stmt->bindValue(':p_id', $_SESSION['Project_ID']);
 
 drawHeader();
 drawPageTitle('List View: Tables',$errMsg);
@@ -26,11 +27,11 @@ drawPageTitle('List View: Tables',$errMsg);
     <td>Remarks</td>
 </tr>
 <?php
-    if($result = $mysqli->use_result())
+    if($result = $stmt->execute())
     {
         $a=0;
         $class='';
-        while($row = $result->fetch_assoc())
+        while($row = $result->fetchArray())
         {
             extract($row);
             if($a%2 == 0) $class='listRowEven';
@@ -44,12 +45,10 @@ drawPageTitle('List View: Tables',$errMsg);
             printf("<td>%s</td><td>%s</td></tr>\n", $row['Table_Name'], $row['Remarks']);
             $a++;
         }
-        $result->close();
         if($a%2 == 0) $class='listRowEven';
         else $class='listRowOdd';
-        echo '<tr><td colspan="3" class="' . $class . '">' . $a . ' records in total</td></tr>';        
+        echo '<tr><td colspan="3" class="' . $class . '">' . $a . ' records in total</td></tr>';
     }
-    else die($mysqli->error);
 ?>
 </table>
 <?php drawButton('CANCEL');?>

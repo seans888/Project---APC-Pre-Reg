@@ -27,7 +27,7 @@ if(xsrf_guard())
 }
 require 'subclasses/cobalt_sst_html.php';
 $html = new cobalt_sst_html;
-$html->draw_header('Detail View: Cobalt SST', $message, $message_type);
+$html->draw_header('Detail View: %%', $message, $message_type);
 $html->draw_listview_referrer_info($filter_field_used, $filter_used, $page_from, $filter_sort_asc, $filter_sort_desc);
 $html->detail_view = TRUE;
 $html->draw_controls('view');

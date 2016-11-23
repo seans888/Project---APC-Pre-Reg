@@ -60,7 +60,7 @@ CREATE TABLE `system_log` (
   `entry_id` bigint(20) NOT NULL auto_increment,
   `ip_address` varchar(255) NOT NULL,
   `user` varchar(255) NOT NULL,
-  `datetime` int(11) NOT NULL,
+  `datetime` datetime NOT NULL,
   `action` varchar(50000) NOT NULL,
   `module` varchar(255) NOT NULL,
   PRIMARY KEY  (`entry_id`)
@@ -125,7 +125,9 @@ INSERT INTO `system_skins` (`skin_id`, `skin_name`, `header`, `footer`, `master_
 (7, 'Salmon Impression', 'skins/default_header.php', 'skins/default_footer.php', 'salmon_impression_master.css', 'salmon_impression_colors.css', 'salmon_impression_fonts.css', 'salmon_impression_override.css','cobalt'),
 (8, 'Royal Amethyst', 'skins/default_header.php', 'skins/default_footer.php', 'royal_amethyst_master.css', 'royal_amethyst_colors.css', 'royal_amethyst_fonts.css', 'royal_amethyst_override.css','cobalt'),
 (9, 'Red Decadence', 'skins/default_header.php', 'skins/default_footer.php', 'red_decadence_master.css', 'red_decadence_colors.css', 'red_decadence_fonts.css', 'red_decadence_override.css','cobalt'),
-(10, 'Modern Eden', 'skins/default_header.php', 'skins/default_footer.php', 'modern_eden_master.css', 'modern_eden_colors.css', 'modern_eden_fonts.css', 'modern_eden_override.css','cobalt');
+(10, 'Modern Eden', 'skins/default_header.php', 'skins/default_footer.php', 'modern_eden_master.css', 'modern_eden_colors.css', 'modern_eden_fonts.css', 'modern_eden_override.css','cobalt'),
+(11, 'Warm Teal', 'skins/default_header.php', 'skins/default_footer.php', 'warm_teal_master.css', 'warm_teal_colors.css', 'warm_teal_fonts.css', 'warm_teal_override.css', 'cobalt'),
+(12, 'Purple Rain', 'skins/default_header.php', 'skins/default_footer.php', 'purple_rain_master.css', 'purple_rain_colors.css', 'purple_rain_fonts.css', 'purple_rain_override.css', 'cobalt');
 
 
 -- --------------------------------------------------------
@@ -366,4 +368,3 @@ INSERT INTO `user_role_links` (`role_id`, `link_id`) VALUES
 (2, 34),
 (2, 35),
 (2, 36);
-

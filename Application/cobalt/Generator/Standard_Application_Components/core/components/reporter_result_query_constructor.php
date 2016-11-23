@@ -111,12 +111,14 @@ if(is_array($show_field))
 init_var($where_clause);
 if(is_array($operator))
 {
+    $d = cobalt_load_class($data_subclass); //We'll use this to prevent SQL Injection attacks
     foreach($operator as $key=>$op_text)
     {
         if($op_text!='')
         {
-            $op_value = $reporter->transform_value($text_field[$key]);
-
+            $op_value = $reporter->preprocess($show_field[$key], $text_field[$key]);
+            $op_value = $reporter->transform_value($op_value);
+            $d->escape_arguments($op_value);
             $new_entry='';
             switch($op_text)
             {
@@ -150,6 +152,20 @@ if(is_array($operator))
 
                 case 'ENDS WITH (%..)': $new_entry = $arr_fields[$arr_fields_by_order[$key]] . " LIKE '%" . $op_value . "'";
                                      break;
+
+                 case 'IN (value1, value2, value3, ... valueN)':
+                                         $data = explode(',', $op_value);
+                                         if(is_array($data))
+                                         {
+                                             $num_values = count($data);
+                                             $lst_in = '';
+                                             for($in_ctr=0; $in_ctr < $num_values; ++$in_ctr)
+                                             {
+                                                 make_list($lst_in, trim($data[$in_ctr]));
+                                             }
+                                             $new_entry = $arr_fields[$arr_fields_by_order[$key]] . " IN(" . $lst_in . ")";
+                                         }
+                                         break;
 
                 case 'BETWEEN (value1, value2)':
                                         $data = explode(',', $op_value);

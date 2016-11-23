@@ -4,7 +4,7 @@ class system_skins_rpt extends reporter
 {
     var $tables='system_skins';
     var $session_array_name = 'SYSTEM_SKINS_REPORT_CUSTOM';
-    var $report_title = 'System Skins: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'system_skins_html';
     var $data_subclass = 'system_skins';
     var $result_page = 'reporter_result_system_skins.php';

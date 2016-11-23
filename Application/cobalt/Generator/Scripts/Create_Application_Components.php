@@ -24,15 +24,19 @@ function createStdAppComponents($path_array)
     $session_name = 'C' . substr(md5(get_token()),0,8);
 
     //Step 4: Get the default database settings
-    $mysqli = connect_db();
-    $mysqli->real_query("SELECT a.Hostname, a.Username, a.Password, a.Database
-                            FROM `database_connection` a, `project` b
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT a.Hostname, a.Username, a.Password, a.Database
+                            FROM database_connection a, project b
                             WHERE a.DB_Connection_ID = b.Database_Connection_ID AND
-                                  b.Project_ID = '$_SESSION[Project_ID]'");
-    if($result = $mysqli->use_result())
+                                  b.Project_ID = :p_id");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+
+    if($result = $stmt->execute())
     {
-        $db = $result->fetch_assoc();
+        $db = $result->fetchArray();
     }
+    $stmt->close();
 
     $project_name = addslashes($_SESSION['Project_Name']);
     //Step 5: Create the config file contents.
@@ -76,7 +80,7 @@ define('MAX_FORM_KEYS',10);
 define('LISTVIEW_RESULTS_PER_PAGE',50);
 define('FOOTER_RESOURCE_USAGE', FALSE);
 define('ENABLE_SIDEBAR', TRUE);
-define('CONTROL_CENTER_COLUMNS',3);
+define('CONTROL_CENTER_COLUMNS',6);
 EOD;
 
     //Step 5: Write the config file. We need the project core path for this.
@@ -94,15 +98,14 @@ EOD;
     //CREATE THE ABOUT PAGE: WE NEED THE PROJECT DESCRIPTION HERE
     //***********************************************************
 
-    $mysqli = connect_db();
-    $mysqli->real_query("SELECT Project_Description FROM `project` WHERE Project_ID='$_SESSION[Project_ID]'");
-    if($result = $mysqli->use_result())
+    $stmt = $d->prepare("SELECT Project_Description FROM `project` WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         $Project_Description = nl2br($data['Project_Description']);
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
 $about_contents=<<<EODD
 <?php

@@ -1,27 +1,26 @@
 <?php
-function createSSTScripts($Table_ID, $path_array, $mysqli)
+function createSSTScripts($Table_ID, $path_array)
 {
-
     $sst_path = $path_array['project_path'] . 'sst/';
 
+    $d = connect_DB();
     //Let's get the table name so we know what subclass to require later.
     //The table name is also the class name generated, so let's call it 'class_name' in the query.
-    $mysqli->real_query("SELECT a.`Table_Name` AS `class_name`, b.`Path_Filename` AS `List_View_Page`
-                         FROM `table` a, `table_pages` b, `page` c
-                         WHERE a.Table_ID='$Table_ID' AND
-                                a.Table_ID=b.Table_ID AND
-                                b.Page_ID=c.Page_ID AND
+    $stmt = $d->prepare("SELECT a.Table_Name AS class_name, b.Path_Filename AS List_View_Page
+                         FROM \"table\" a, table_pages b, page c
+                         WHERE a.Table_ID = :t_id AND
+                                a.Table_ID = b.Table_ID AND
+                                b.Page_ID = c.Page_ID AND
                                 c.Description LIKE 'List View%'");
-    if($result = $mysqli->use_result())
+    $stmt->bindValue(':t_id', $Table_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
         $sst_subclass      = $class_name . '_sst';
         $sst_subclass_file = $sst_subclass . '.php';
     }
-    else die($mysqli->error);
-    $result->close();
-
+    $stmt->close();
 
     $modules_directory   = 'modules/';
     $location_add        = '';
@@ -29,15 +28,16 @@ function createSSTScripts($Table_ID, $path_array, $mysqli)
     $location_delete     = '';
     $location_detailview = '';
     //Let's get the active pages and path&filenames for the table.
-    $mysqli->real_query("SELECT b.`Path_Filename`, c.`Page_Name`
-                         FROM `table` a, `table_pages` b, `page` c
-                         WHERE a.Table_ID='$Table_ID' AND
-                                a.Table_ID=b.Table_ID AND
-                                b.Page_ID=c.Page_ID AND
+    $stmt = $d->prepare("SELECT b.Path_Filename, c.Page_Name
+                         FROM \"table\" a, table_pages b, page c
+                         WHERE a.Table_ID = :t_id AND
+                                a.Table_ID = b.Table_ID AND
+                                b.Page_ID = c.Page_ID AND
                                 c.Page_Name IN ('Add1','Edit1','Delete1','DetailView1')"); //we only care about standard view, add, edit and delete for testing
-    if($result = $mysqli->use_result())
+    $stmt->bindValue(':t_id', $Table_ID);
+    if($result = $stmt->execute())
     {
-        while($data = $result->fetch_assoc())
+        while($data = $result->fetchArray())
         {
             extract($data);
             if($Page_Name == 'Add1')
@@ -58,8 +58,7 @@ function createSSTScripts($Table_ID, $path_array, $mysqli)
             }
         }
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
 
     //FIXME: In production-grade version, this should really check actual page generators instead of just assuming add/edit/del

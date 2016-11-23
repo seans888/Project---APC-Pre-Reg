@@ -1,26 +1,27 @@
 <?php
-function createDocScripts($Table_ID, $path_array, $mysqli)
+function createDocScripts($Table_ID, $path_array)
 {
     $doc_path = $path_array['project_path'] . 'help/doc_pages/';
 
+    $d = connect_DB();
     //Let's get the table name so we know what subclass to require later.
     //The table name is also the class name generated, so let's call it 'class_name' in the query.
-    $mysqli->real_query("SELECT a.`Table_Name` AS `class_name`, b.`Path_Filename` AS `List_View_Page`
-                         FROM `table` a, `table_pages` b, `page` c
-                         WHERE a.Table_ID='$Table_ID' AND
-                                a.Table_ID=b.Table_ID AND
-                                b.Page_ID=c.Page_ID AND
+    $stmt = $d->prepare("SELECT a.Table_Name AS class_name, b.Path_Filename AS List_View_Page
+                         FROM \"table\" a, table_pages b, page c
+                         WHERE a.Table_ID = :t_id AND
+                                a.Table_ID = b.Table_ID AND
+                                b.Page_ID = c.Page_ID AND
                                 c.Description LIKE 'List View%'");
-    if($result = $mysqli->use_result())
+    $stmt->bindValue(':t_id', $Table_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
         $doc_subclass      = $class_name . '_doc';
         $doc_subclass_file = $doc_subclass . '.php';
         $doc_directory     = $doc_path . $class_name;
     }
-    else die($mysqli->error);
-    $result->close();
+    $stmt->close();
 
     //Doc Page
     $doc_script =<<<EOD

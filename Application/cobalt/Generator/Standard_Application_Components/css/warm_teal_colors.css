@@ -1,0 +1,556 @@
+/* After Sunset skin created for Cobalt on March 2014 by KSR */
+
+.HeaderBanner {
+
+/* Title */
+    color: #1fa09a;
+    background: url('../images/warm_teal/warm_teal_pattern.png'), #1fa09a;
+}
+
+/* Subtitle */
+.HeaderBanner span {
+    color: #d6d6d6;
+}
+
+/* Top Navigation */
+.HeaderMenu {
+    background-color: #1fa09a;
+}
+
+.Footer {
+    background-color: #26272b;
+}
+
+a:link {
+    color: #e69044;
+}
+a:visited {
+    color: #fa4800;
+}
+a:hover {
+    color: #fa4800;
+}
+a:active {
+    color: #fa4800;
+}
+
+a.footer:link {
+    color : #fa4800;
+}
+a.footer:visited {
+    color : #fa4800;
+}
+a.footer:hover {
+    color : #fa4800;
+}
+a.footer:active {
+    color : #fa4800;
+}
+
+/* Top Navigation */
+a.menu:link {
+    color : #f0f0f0;
+}
+a.menu:visited {
+    color : #f0f0f0;
+}
+a.menu:hover {
+    color : #e9b71d;
+}
+a.menu:active {
+    color : #fa4800;
+}
+
+/* Control Center */
+a.linkCC:link {
+    color: #db848b;
+}
+a.linkCC:visited {
+    color: #1fa09a;
+}
+a.linkCC:hover {
+    color: #f0f0f0;
+    background-color: #db848b;
+}
+a.linkCC:active {
+    color: #fa4800;
+}
+
+/* List View */
+a.listRowEven:link {
+    color: #fa4800;
+}
+a.listRowEven:visited {
+    color: #fa4800;
+}
+a.listRowEven:hover {
+    color: #fa4800;
+}
+a.listRowEven:active {
+    color: #fa4800;
+}
+
+/* Sort arrows */
+a.listRowHead:link {
+    color: #e6b844;
+}
+a.listRowHead:visited {
+    color: #e6b844;
+}
+a.listRowHead:hover {
+    color: #e6b844;
+}
+a.listRowHead:active {
+    color: #e6b844;
+}
+
+/* List View */
+a.listRowOdd:link {
+    color: #fa4800;
+}
+a.listRowOdd:visited {
+    color: #fa4800;
+}
+a.listRowOdd:hover {
+    color: #fa4800;
+}
+a.listRowOdd:active {
+    color: #fa4800;
+}
+
+/* 'Add new record' etc. */
+a.listview:link {
+    color: #e6b844;
+}
+a.listview:visited {
+    color: #e6b844;
+}
+a.listview:hover {
+    color: #e6b844;
+}
+a.listview:active {
+    color: #e6b844;
+}
+
+/* Side Navigation */
+a.sidebar {
+    color: #bababa;
+}
+
+a.sidebar:hover {
+    color: #fa4800;
+}
+
+body {
+    background-color: #26272b;
+    color: #bababa;
+}
+
+div.container {
+
+}
+
+div.container_footer {
+
+}
+
+div.container_icons_CC {
+
+}
+
+div.file_upload {
+    background-color: #d6d6d6;
+    border-color: #110f10;
+}
+
+fieldset {
+    background-color: #110f10;
+    color: #bababa;
+}
+
+/* Container around the windows (visible in Cobalt Default) */
+fieldset.container {
+    background-color: #26272b;
+    border-color: #26272b;
+}
+
+/* Container around A/E/D/V window */
+fieldset.container_invisible {
+    background-color: #26272b;
+}
+
+/* Head of Control Center and A/E/D/V windows */
+fieldset.top {
+    background-color: #1fa09a;
+    border-color: #6b6b6b;
+    color: #f0f0f0;
+
+}
+
+/* Body of Control Center and A/E/D/V windows */
+fieldset.middle {
+    color: #1fa09a;
+    background: url('../images/warm_teal/warm_teal_pattern.png'), #1fa09a;
+    color: #1fa09a;
+    background-color: #d2f0d5;
+    border-color: #110f10;
+}
+
+/* Foot of A/E/D/V window */
+fieldset.bottom {
+    background-color: #1fa09a;
+    border-color: #6b6b6b;
+    color: #fa4800;
+}
+
+fieldset.middle_top {
+    background-color: #110f10;
+    border-color: #110f10;
+}
+
+fieldset.fieldset_group {
+
+}
+
+/* Fieldset (if any) Label in A/E/D/V */
+fieldset legend {
+    background-color: #110f10;
+    border-color: #6b6b6b;
+    color: #d6d6d6;
+}
+
+img {
+
+}
+
+input {
+    color: #000000;
+}
+
+input[type=button] {
+    background-color: #8f8f8f;
+}
+input[type=button]:hover {
+    background-color: #8f8f8f;
+    color: #f0f0f0;
+}
+input[type=button]:active {
+
+}
+input[type=button]:focus {
+    background-color: #fa4800;
+}
+
+input[type=checkbox] {
+
+}
+input[type=checkbox]:focus {
+
+}
+
+input[type=file] {
+
+}
+input[type=file]:focus {
+    outline:#3399ff solid 1px;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+input[type=password] {
+    background-color: #d6d6d6;
+    border-color: #110f10;
+}
+input[type=password]:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+input[type=radio] {
+
+}
+input[type=radio]:focus {
+    outline:#3399ff solid 1px;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+input[type=submit] {
+    background-color: #e6b844;
+}
+input[type=submit]:hover {
+    background-color: #e6b844;
+    color: #f0f0f0;
+}
+input[type=submit]:active {
+
+}
+input[type=submit]:focus {
+    background-color: #fa4800;
+}
+input[type=submit].cancel:hover {
+    background-color: #fa4800;
+}
+input[type=submit].submit:hover {
+
+}
+
+input[type=text] {
+    background-color: #d6d6d6;
+    border-color: #110f10;
+}
+input[type=text]:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+ol.normal {
+
+}
+
+option {
+
+}
+
+.label {
+
+
+}
+
+.messageError {
+     background: url('../images/warm_teal/warm_teal_pattern.png'), #cc3333;
+     background: url('../images/warm_teal/warm_teal_pattern.png'), #cc3333; background: url('../images/warm_teal/warm_teal_pattern.png'), #cc3333;
+    background-color: #cc3333;
+    color: #cc3333;
+    border-color: #ff0000;
+}
+.messageError a:link {
+    color: #0000ff;
+}
+.messageError a:visited {
+    color: #0000ff;
+}
+.messageError a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageError a:active {
+    color: #0000ff;
+}
+
+.messageInfo {
+    background: url('../images/warm_teal/warm_teal_pattern.png'), #76aadb;
+     background: url('../images/warm_teal/warm_teal_pattern.png'), #76aadb; background: url('../images/warm_teal/warm_teal_pattern.png'), #76aadb;
+    background-color: #76aadb;
+    color: #000000;
+}
+.messageInfo a:link {
+    color: #0000ff;
+}
+.messageInfo a:visited {
+    color: #0000ff;
+}
+.messageInfo a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageInfo a:active {
+    color: #0000ff;
+}
+
+.messageSystem {
+    background: url('../images/warm_teal/warm_teal_pattern.png'), #66cc66;
+     background: url('../images/warm_teal/warm_teal_pattern.png'), #66cc66; background: url('../images/warm_teal/warm_teal_pattern.png'), #66cc66;
+    background-color: #66cc66;
+    color: #000000;
+}
+.messageSystem a:link {
+    color: #0000ff;
+}
+.messageSystem a:visited {
+    color: #0000ff;
+}
+.messageSystem a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageSystem a:active {
+    color: #0000ff;
+}
+
+.messageTip {
+    background: url('../images/warm_teal/warm_teal_pattern.png'), #fffacc;
+     background: url('../images/warm_teal/warm_teal_pattern.png'), #fffacc; background: url('../images/warm_teal/warm_teal_pattern.png'), #fffacc;
+    background-color: #fffacc;
+    color: #000000;
+}
+.messageTip a:link {
+    color: #0000ff;
+}
+.messageTip a:visited {
+    color: #0000ff;
+}
+.messageTip a:hover {
+    color: #0000ff;
+    text-shadow: 1px 1px 10 #fff;
+}
+.messageTip a:active {
+    color: #0000ff;
+}
+
+/* Heading */
+.pageHeaderText {
+    color: #1fa09a;
+}
+
+.pageHeaderDiv {
+    background-color: #26272a;
+
+}
+
+p.detail_view {
+
+}
+
+p.multifield_detail_view {
+
+}
+
+p.multifield_detail_view_label {
+
+}
+
+select {
+    background-color: #d6d6d6;
+    border-color: #110f10;
+    color: #000000;
+}
+select:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+table {
+
+}
+
+table.input_form td {
+
+}
+
+table.listView {
+
+}
+
+/* Side Navigation and List View table body cells */
+table.listView td {
+    border-color: #1fa09a;
+}
+
+/* Side Navigation and List View table head cells */
+table.listView tr[class=listRowHead] td {
+    background-color: #1fa09a;
+    border-top-color: #26272b;
+    border-bottom-color: #6b6b6b;
+    color: #f0f0f0;
+}
+
+td {
+
+}
+
+/* Top Navigation */
+td.menu {
+
+}
+
+td.menu:hover {
+
+}
+
+td.oper_col {
+
+}
+
+/* Module Control, Set User Passports, & List View.cells */
+td.listCell:hover {
+    background-color: #2a2a2a;
+    color: #fa4800;
+}
+
+tr.listRowEven {
+    background-color: #110f10;
+}
+tr.listRowEven:hover {
+    background-color: #2a2a2a;
+    color: #fa4800;
+}
+
+/* Module Control and Set User Passports.rows */
+tr.listRowEvenNoHighlight {
+    background-color: #1fa09a;
+    color: #d3f1d3;
+}
+
+/* Side Navigation and List View table head row */
+tr.listRowHead {
+
+}
+
+tr.listRowOdd {
+    background-color: #191919;
+}
+tr.listRowOdd:hover {
+    background-color: #2a2a2a;
+    color: #fa4800;
+}
+
+/* Module Control and Set User Passports.rows */
+tr.listRowOddNoHighlight {
+    background-color: #110f10;
+}
+
+/* Filter + Page # in List View */
+tr.listViewBar {
+    background-color: #1fa09a;
+    color: #f0f0f0;
+}
+
+/* 'You are logged in as' in Top Navigation */
+.text-normal {
+color: #d2f0d5;
+}
+
+/* Username in Top Navigation */
+.text-info {
+    color: #e9b71d;
+}
+
+textarea {
+    background-color: #d6d6d6;
+    border-color: #110f10;
+    color: #000000;
+}
+textarea:focus {
+    border-color: #3399ff;
+    -moz-box-shadow: 1px 1px 3px #666666 inset;
+    -webkit-box-shadow: 1px 3px 1px #666666 inset;
+    box-shadow: 1px 1px 3px #666666 inset;
+}
+
+.throbber {
+
+
+}
+
+.throbber_screen_locker {
+    background-color: rgba(255, 255, 255, .6);
+}

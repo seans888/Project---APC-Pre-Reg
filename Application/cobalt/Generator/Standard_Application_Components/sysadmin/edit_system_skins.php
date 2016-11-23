@@ -58,7 +58,7 @@ if(xsrf_guard())
 }
 require 'subclasses/system_skins_html.php';
 $html = new system_skins_html;
-$html->draw_header('Edit System Skins', $message, $message_type);
+$html->draw_header('Edit %%', $message, $message_type);
 $html->draw_listview_referrer_info($filter_field_used, $filter_used, $page_from, $filter_sort_asc, $filter_sort_desc);
 $html->draw_hidden('skin_id');
 

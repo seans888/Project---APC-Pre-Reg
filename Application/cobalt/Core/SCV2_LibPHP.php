@@ -43,21 +43,21 @@ function scriptCheckIfNull()
 	return $errMsg;
 }
 
-function scriptCheckIfUnique_del($select, $delete)
+function scriptCheckIfUnique_del($stmt_select, $stmt_delete)
 {
-	if($select=="" || $delete=="") die("Incomplete parameters passed to scriptCheckIfUnique_del()!");
-	$query=mysql_query($select);
-	$numrows=mysql_num_rows($query);
-	if($numrows>0) mysql_query($delete); //delete the old value so, in effect, we will be overwriting it.
+	if($stmt_select=="" || $stmt_delete=="") die("Incomplete parameters passed to scriptCheckIfUnique_del()!");
+	$result = $stmt_select->execute();
+	$numrows=0;
+	while($result->fetchArray()) ++$numrows;
+	if($numrows>0) $stmt_delete->execute(); //delete the old value so, in effect, we will be overwriting it.
 }
 
-function scriptCheckIfUnique($select, $errMsg)
+function scriptCheckIfUnique($stmt_select, $errMsg)
 {
-	$mysqli = connect_DB();
 	$message="";
-	$result = $mysqli->query($select);
-	$numrows= $result->num_rows;
+	$result = $stmt_select->execute();
+	$numrows = 0;
+	while($result->fetchArray()) ++$numrows;
 	if($numrows>0) $message = $errMsg;
 	return $message;
 }
-

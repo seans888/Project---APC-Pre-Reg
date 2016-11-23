@@ -4,7 +4,7 @@ class user_passport_groups_rpt extends reporter
 {
     var $tables='user_passport_groups';
     var $session_array_name = 'USER_PASSPORT_GROUPS_REPORT_CUSTOM';
-    var $report_title = 'User Passport Groups: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'user_passport_groups_html';
     var $data_subclass = 'user_passport_groups';
     var $result_page = 'reporter_result_user_passport_groups.php';

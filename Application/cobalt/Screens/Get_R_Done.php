@@ -21,6 +21,7 @@ if(xsrf_guard())
         {
             //For large systems, default max execution time of PHP may not suffice (particularly on Windows).
             //Bump up max execution time if less than 3 minutes to be extremely safe
+            //For further tweaks, dev will just tweak php.ini max_execution_time to suit his needs
             $limit  = ini_get('max_execution_time');
             if($limit < 180)
             {
@@ -41,17 +42,14 @@ if(xsrf_guard())
 
 
             //Connection for main source file (this one).
-            $mysqli = connect_DB();
+            $d = connect_DB();
 
-            //Connections available for all block depths for the createModule and createClass functions.
-            $mysqli_con1 = connect_DB();
-            $mysqli_con2 = connect_DB();
-            $mysqli_con3 = connect_DB();
+            $stmt = $d->prepare("SELECT Base_Directory FROM project WHERE Project_ID=:p_id");
+            $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
 
-            $mysqli->real_query("SELECT Base_Directory FROM project WHERE Project_ID='$_SESSION[Project_ID]'");
-            if($result=$mysqli->use_result())
+            if($result = $stmt->execute())
             {
-                $data  = $result->fetch_assoc();
+                $data  = $result->fetchArray();
                 extract($data);
                 $SCV2_path = substr(FULLPATH_CORE,0,-5); //"-5" = remove "Core/" from FULLPATH_CORE
                 $SCV2_core_path = $SCV2_path . 'Generator/Core_Files/';
@@ -118,8 +116,7 @@ if(xsrf_guard())
                     die();
                 }
             }
-            else die($mysqli->error);
-            $result->close();
+            $stmt->close();
 
             //Startup tasks
             //Load all functions we need for a minimal system generation (user-defined modules only, no standard/admin apps)
@@ -166,13 +163,19 @@ EOD;
             if(is_array($classFile))
             {
                 //For use in DD creation specifically for SQL-based drop-down lists, we need to know how many databases we have
-                $mysqli->real_query("SELECT DISTINCT `Database` FROM `database_connection` WHERE Project_ID = '$_SESSION[Project_ID]'");
-                if($result = $mysqli->store_result())
+                $stmt = $d->prepare("SELECT DISTINCT `Database` FROM `database_connection` WHERE Project_ID = :p_id");
+                $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+                if($result = $stmt->execute())
                 {
-                    $num_databases = $result->num_rows;
-                    $result->close();
+                    $num_databases = 0;
+                    while($result->fetchArray())
+                    {
+                        ++$num_databases;
+                    }
                 }
-                foreach($classFile as $class) createClass($class, $subclass_path, $mysqli_con1, $mysqli_con2, $mysqli_con3, $num_databases);
+                $stmt->close();
+                //foreach($classFile as $class) createClass($class, $subclass_path, $mysqli_con1, $mysqli_con2, $mysqli_con3, $num_databases);
+                foreach($classFile as $class) createClass($class, $subclass_path, $num_databases);
             }
 
             //Before creating the modules, we also should delete the user links query file for the access control list if it
@@ -195,25 +198,32 @@ EOD;
             $arr_table_of_content_links = array();
             foreach($tableModules as $module)
             {
-                $mysqli->real_query("SELECT Page_ID FROM table_pages WHERE Table_ID='$module'");
-                if($result=$mysqli->use_result())
+                $stmt = $d->prepare("SELECT Page_ID FROM table_pages WHERE Table_ID=:t_id");
+                $stmt->bindValue(':t_id', $module);
+                $arr_page_data = array();
+                if($result = $stmt->execute())
                 {
-                    while($data  = $result->fetch_assoc())
+                    while($data = $result->fetchArray())
                     {
-                        extract($data);
-                        $module_permission_count = createModule($module, $Page_ID, $path_array, $mysqli_con1, $mysqli_con2);
-                        $numModules += $module_permission_count;
+                        $arr_page_data[] = $data;
                     }
+                }
+
+                foreach($arr_page_data as $data)
+                {
+                    extract($data);
+                    $module_permission_count = createModule($module, $Page_ID, $path_array);
+                    $numModules += $module_permission_count;
                 }
 
                 //If standard app components were chosen, we also generate SST and Doc modules.
                 if($GenerateFiles=='YES PLEASE')
                 {
                     //SST modules creation - Cobalt's Super Sonic Testing feature for automated functional tests.
-                    createSSTScripts($module, $path_array, $mysqli_con1);
+                    createSSTScripts($module, $path_array);
 
                     //Documentation creation - Cobalt's built-in auto doc feature.
-                    $arr_table_of_content_links[] = createDocScripts($module, $path_array, $mysqli_con1);
+                    $arr_table_of_content_links[] = createDocScripts($module, $path_array);
                 }
             }
 
@@ -262,7 +272,7 @@ EOD;
                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                          <input type=submit name=BACK value=BACK>','system');
+                          <input type="submit" name="BACK" value="BACK">','system');
             drawFooter();
             die();
         }
@@ -326,17 +336,19 @@ echo '<tr class="listRowHead">'
           </td>
       </tr>';
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT a.Table_ID, a.Table_Name
-                        FROM `table` a, `database_connection` b
-                        WHERE a.Project_ID='$_SESSION[Project_ID]' AND
+
+$d = connect_DB();
+$stmt = $d->prepare("SELECT a.Table_ID, a.Table_Name
+                        FROM \"table\" a, database_connection b
+                        WHERE a.Project_ID=:p_id AND
                               a.DB_Connection_ID = b.DB_Connection_ID
                         ORDER BY a.Table_Name");
+$stmt->bindValue(':p_id',$_SESSION['Project_ID']);
 
-if($result = $mysqli->store_result())
+if($result = $stmt->execute())
 {
     $a=0;
-    while($data = $result->fetch_array())
+    while($data = $result->fetchArray())
     {
         extract($data);
         if($a%2==0) $class='listRowEven';
@@ -349,7 +361,6 @@ if($result = $mysqli->store_result())
         ++$a;
     }
 }
-else die($mysqli->error);
 
 if($a%2==0) $class='listRowEven';
 else $class='listRowOdd';

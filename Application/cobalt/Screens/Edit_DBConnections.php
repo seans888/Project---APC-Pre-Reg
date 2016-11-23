@@ -7,32 +7,30 @@ if(isset($_GET['DB_Connection_ID']))
     $DB_Connection_ID = rawurldecode($_GET['DB_Connection_ID']);
     $Orig_DB_Connection_ID = $DB_Connection_ID;
     unset($_GET);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `DB_Connection_Name`, `Hostname`, `Username`, `Password`, `Database` 
-                            FROM `database_connection` 
-                            WHERE `DB_Connection_ID`='$DB_Connection_ID'");
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT DB_Connection_Name, Hostname, Username, Password, Database
+                            FROM database_connection
+                            WHERE DB_Connection_ID=:db_id");
+    $stmt->bindValue(':db_id', $DB_Connection_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
         $Orig_DB_Connection_Name = $DB_Connection_Name;
     }
-    else die($mysqli->error);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `Database_Connection_ID` 
-                            FROM `project` 
-                            WHERE Project_ID='$_SESSION[Project_ID]'");
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT `Database_Connection_ID`
+                            FROM `project`
+                            WHERE Project_ID=:p_id");
+    $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+    if($result = $stmt->execute())
     {
-        $info = $result->fetch_row();
+        $info = $result->fetchArray();
         if($info[0] == $DB_Connection_ID) $Default_Connection = 'Yes';
         else $Default_Connection = 'No';
     }
-    else die($mysqli->error);
-    $result->close();
-    $mysqli->close();
 }
 
 if(xsrf_guard())
@@ -45,20 +43,24 @@ if(xsrf_guard())
         header('location: ListView_DBConnections.php');
         exit();
     }
-    
+
     if($_POST['btnSubmit'])
     {
         extract($_POST);
-        $errMsg = scriptCheckIfNull('DB Connection Name', $DB_Connection_Name, 
-                                    'Hostname', $Hostname, 
+        $errMsg = scriptCheckIfNull('DB Connection Name', $DB_Connection_Name,
+                                    'Hostname', $Hostname,
                                     'Database', $Database,
                                     'Username', $Username);
-        
+
         if($errMsg=="")
         {
-            $select = "SELECT DB_Connection_ID FROM database_connection WHERE DB_Connection_Name='$DB_Connection_Name' AND DB_Connection_ID!='$Orig_DB_Connection_ID' AND DB_Connection_Name!='$Orig_DB_Connection_Name'";
+            $d = connect_DB();
+            $stmt = $d->prepare("SELECT DB_Connection_ID FROM database_connection WHERE DB_Connection_Name=:db_name AND DB_Connection_ID!=:db_id AND DB_Connection_Name!=:db_orig_name");
+            $stmt->bindValue(':db_name', $DB_Connection_Name);
+            $stmt->bindValue(':db_id', $Orig_DB_Connection_ID);
+            $stmt->bindValue(':db_orig_name', $Orig_DB_Connection_Name);
             $error = "The database connection name '$DB_Connection_Name' already exists. Please choose a new one. <br>";
-            $errMsg = scriptCheckIfUnique($select, $error);
+            $errMsg = scriptCheckIfUnique($stmt, $error);
 
             if($errMsg=="")
             {

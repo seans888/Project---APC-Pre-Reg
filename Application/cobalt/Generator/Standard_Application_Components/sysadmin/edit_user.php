@@ -69,7 +69,7 @@ if(xsrf_guard())
 }
 require 'subclasses/user_html.php';
 $html = new user_html;
-$html->draw_header('Edit User', $message, $message_type);
+$html->draw_header('Edit %%', $message, $message_type);
 $html->draw_listview_referrer_info($filter_field_used, $filter_used, $page_from, $filter_sort_asc, $filter_sort_desc);
 $html->draw_hidden('orig_username');
 $html->exception = array('password');

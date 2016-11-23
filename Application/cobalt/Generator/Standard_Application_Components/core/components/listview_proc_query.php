@@ -110,22 +110,21 @@ $data_con->set_limit($pager->offset, $pager->records_per_page);
 if(DEBUG_MODE && isset($print_settings) && $print_settings == TRUE)
 {
     echo '<pre>';
-    echo 'ListView Settings Dump: <br><br>';
-    echo '<b>$join_clause:</b> <br>' . $join_clause . '<br><br><hr>';
-    echo '<b>$where_clause:</b> <br>' . $where_clause . '<br><br><hr>';
-    echo '<b>$lst_fields:</b> <br>' . $lst_fields . '<br><br><hr>';
-    echo '<b>$arr_fields:</b> <br>';
-    array_to_source($arr_fields);
-    echo '<br><br><hr>';
-    echo '<b>$arr_field_labels:</b> ';
-    array_to_source($arr_field_labels);
-    echo '<br><br><hr>';
-    echo '<b>$lst_filter_fields:</b><br>' . $lst_filter_fields . '<br><br><hr>';
-    echo '<b>$arr_filter_field_labels:</b> ';
-    array_to_source($arr_filter_field_labels);
-    echo '<br><br><hr>';
-    echo '<b>$arr_subtext_separators:</b> ';
-    array_to_source($arr_subtext_separators);
-    echo '<br><br><hr>';
+    echo '$join_clause = \'' . $join_clause . '\';<br>';
+    echo '$where_clause = "' . $where_clause . '";<br>';
+    echo '$lst_fields = \'' . $lst_fields . '\';<br>';
+    echo '$arr_fields = ';
+    array_to_source($arr_fields, FALSE, 20, 6, 'custom');
+    echo '<br>';
+    echo '$arr_field_labels = ';
+    array_to_source($arr_field_labels, FALSE, 26, 6, 'custom');
+    echo '<br>';
+    echo '$lst_filter_fields = \'' . $lst_filter_fields . '\';<br>';
+    echo '$arr_filter_field_labels = ';
+    array_to_source($arr_filter_field_labels, FALSE, 33, 6, 'custom');
+    echo '<br>';
+    echo '$arr_subtext_separators = ';
+    array_to_source($arr_subtext_separators, FALSE, 32, 6, 'custom');
+    echo '<br>';
     echo '</pre>';
 }

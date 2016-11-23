@@ -2,7 +2,7 @@
 class cobalt_sst_dd
 {
     static $table_name = 'cobalt_sst';
-    static $readable_name = 'Cobalt Sst';
+    static $readable_name = 'Cobalt SST';
 
     static function load_dictionary()
     {
@@ -15,7 +15,6 @@ class cobalt_sst_dd
                                               'attribute'=>'primary key',
                                               'control_type'=>'none',
                                               'size'=>0,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Auto ID',
                                               'extra'=>'',
@@ -43,7 +42,6 @@ class cobalt_sst_dd
                                               'attribute'=>'',
                                               'control_type'=>'textbox',
                                               'size'=>60,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Title',
                                               'extra'=>'',
@@ -71,7 +69,6 @@ class cobalt_sst_dd
                                               'attribute'=>'',
                                               'control_type'=>'textarea',
                                               'size'=>'58;5',
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Description',
                                               'extra'=>'',
@@ -99,7 +96,6 @@ class cobalt_sst_dd
                                               'attribute'=>'',
                                               'control_type'=>'textbox',
                                               'size'=>60,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Config File',
                                               'extra'=>'',

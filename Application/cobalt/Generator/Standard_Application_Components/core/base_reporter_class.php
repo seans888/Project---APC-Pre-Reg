@@ -26,6 +26,7 @@ class base_reporter
                                'DOES NOT CONTAIN (%..%)',
                                'STARTS WITH (..%)',
                                'ENDS WITH (%..)',
+                               'IN (value1, value2, value3, ... valueN)',
                                'BETWEEN (value1, value2)',
                                'NOT BETWEEN (value1, value2)');
 
@@ -314,5 +315,93 @@ class base_reporter
         //$field = name of field receiving the filter value (so that preprocessing can be selective per field)
         //$value = filter value submitted by user
         return $value;
+    }
+
+
+    //**********************************************************************************************************
+    //FUNCTIONS BELOW: Experimental API for custom reporting purposes (bypassing the default interface provided)
+
+    function set_show_fields($arr_fields)
+    {
+        $_SESSION[$this->session_array_name]['show_field'] = $arr_fields;
+        return $this;
+    }
+
+    function set_sum_fields($arr_fields=array())
+    {
+        $_SESSION[$this->session_array_name]['sum_field'] = $arr_fields;
+        return $this;
+    }
+
+    function set_count_fields($arr_fields=array())
+    {
+        $_SESSION[$this->session_array_name]['count_field'] = $arr_fields;
+        return $this;
+    }
+
+    function set_operators($arr_operators=array())
+    {
+        $_SESSION[$this->session_array_name]['operator'] = $arr_operators;
+        return $this;
+
+    }
+
+    function set_operands($arr_operands=array())
+    {
+        $_SESSION[$this->session_array_name]['text_field'] = $arr_operands;
+        return $this;
+    }
+
+    function set_group_fields($arr_group_fields=null)
+    {
+        if($arr_group_fields == null)
+        {
+            $_SESSION[$this->session_array_name]['group_field1'] = '';
+            $_SESSION[$this->session_array_name]['group_field2'] = '';
+            $_SESSION[$this->session_array_name]['group_field3'] = '';
+        }
+        elseif(is_array($arr_group_fields) && count($arr_group_fields) >= 1)
+        {
+            foreach($arr_group_fields as $group_field => $field_name)
+            {
+                switch(strtolower($group_field))
+                {
+                    case 'group_field1':
+                    case 'group_field2':
+                    case 'group_field3':
+                                        $_SESSION[$this->session_array_name][$group_field] = $field_name;
+                                        break;
+                    default:
+                                        error_handler("Cannot set group field for the report.", " Invalid group_field specified.");
+                }
+            }
+        }
+        return $this;
+    }
+
+    function init()
+    {
+        $this->set_show_fields(array());
+        $this->set_sum_fields();
+        $this->set_count_fields();
+        $this->set_operators();
+        $this->set_operands();
+        $this->set_group_fields();
+        return $this;
+    }
+
+    function build()
+    {
+        $_GET['token'] = $_SESSION[$this->session_array_name]['token'] = generate_token();
+        $reporter = $this;
+        require 'components/reporter_result_query_constructor.php';
+        require 'components/reporter_result_body.php';
+        return $this;
+    }
+
+    function end()
+    {
+        unset($_SESSION[$this->session_array_name]);
+        return $this;
     }
 }

@@ -56,7 +56,7 @@ if(xsrf_guard())
 }
 require 'subclasses/cobalt_sst_html.php';
 $html = new cobalt_sst_html;
-$html->draw_header('Add Cobalt SST', $message, $message_type);
+$html->draw_header('Add %%', $message, $message_type);
 $html->draw_listview_referrer_info($filter_field_used, $filter_used, $page_from, $filter_sort_asc, $filter_sort_desc);
 $html->draw_controls('add');
 

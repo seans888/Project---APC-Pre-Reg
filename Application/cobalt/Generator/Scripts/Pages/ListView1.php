@@ -28,53 +28,75 @@ $Delete_Path = '';
 $DetailView_Path = '';
 
 //Edit page first...
-$mysqli->real_query("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID='$Table_ID' AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'Edit%'");
-if($result = $mysqli->store_result())
+$stmt = $d->prepare("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID=:t_id AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'Edit%'");
+$stmt->bindValue(':t_id', $Table_ID);
+if($result = $stmt->execute())
 {
-    while($data = $result->fetch_assoc())
+    while($data = $result->fetchArray())
+    {
         $Edit_Path = basename($data['Path_Filename']);
+    }
 }
-else die($mysqli->error);
-
+$stmt->close();
 if($Edit_Path=='') $Edit_Path = 'edit_' . $class_file;
 
 //Delete page...
-$mysqli->real_query("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID='$Table_ID' AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'Delete%'");
-if($result = $mysqli->store_result())
-    while($data = $result->fetch_assoc())
+$stmt = $d->prepare("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID=:t_id AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'Delete%'");
+$stmt->bindValue(':t_id', $Table_ID);
+if($result = $stmt->execute())
+{
+    while($data = $result->fetchArray())
+    {
         $Delete_Path = basename($data['Path_Filename']);
-
+    }
+}
+$stmt->close();
 if($Delete_Path=='') $Delete_Path = 'delete_' . $class_file;
 
 //DetailView page...
-$mysqli->real_query("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID='$Table_ID' AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'DetailView%'");
-if($result = $mysqli->store_result())
-    while($data = $result->fetch_assoc())
+$stmt = $d->prepare("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID=:t_id AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'DetailView%'");
+$stmt->bindValue(':t_id', $Table_ID);
+if($result = $stmt->execute())
+{
+    while($data = $result->fetchArray())
+    {
         $DetailView_Path = basename($data['Path_Filename']);
-
+    }
+}
+$stmt->close();
 if($DetailView_Path=='') $DetailView_Path = 'detailview_' . $class_file;
 
 
 //CSV module link
-$mysqli->real_query("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID='$Table_ID' AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'CSVExport%'");
-if($result = $mysqli->store_result())
-    while($data = $result->fetch_assoc())
+$stmt = $d->prepare("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID=:t_id AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'CSVExport%'");
+$stmt->bindValue(':t_id', $Table_ID);
+if($result = $stmt->execute())
+{
+    while($data = $result->fetchArray())
+    {
         $CSV_Path = basename($data['Path_Filename']);
-
+    }
+}
+$stmt->close();
 if($CSV_Path=='') $CSV_Path = 'csv_' . $class_file;
 
 //reporter module link
-$mysqli->real_query("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID='$Table_ID' AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'ReporterInterface%'");
-if($result = $mysqli->store_result())
-    while($data = $result->fetch_assoc())
+$stmt = $d->prepare("SELECT a.Path_Filename FROM table_pages a, page b WHERE a.Table_ID=:t_id AND a.Page_ID=b.Page_ID AND b.Page_Name LIKE 'ReporterInterface%'");
+$stmt->bindValue(':t_id', $Table_ID);
+if($result = $stmt->execute())
+{
+    while($data = $result->fetchArray())
+    {
         $Reporter_Path = basename($data['Path_Filename']);
-
+    }
+}
+$stmt->close();
 if($Reporter_Path=='') $Reporter_Path = 'reporter_' . $class_file;
 
 
 $script_content=<<<EOD
 
-\$page_title       = 'ListView: $class_name_spaced';
+\$page_title       = 'ListView: %%';
 \$db_subclass      = '$class_name';
 \$html_subclass    = '$html_subclass_name';
 \$arr_pkey_name    = array($Primary_Keys);

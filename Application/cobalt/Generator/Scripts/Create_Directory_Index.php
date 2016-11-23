@@ -7,7 +7,7 @@ function createDirectoryIndex($current_directory)
 redirect(INDEX_TARGET);
 EOD;
 
-    $filename = $current_directory . '/index.php';
+    $filename = $current_directory . 'index.php';
     if(file_exists($filename)) unlink($filename);
     $newfile=fopen($filename,"ab");
     fwrite($newfile, $index_content);

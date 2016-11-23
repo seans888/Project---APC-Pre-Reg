@@ -10,7 +10,7 @@ if(xsrf_guard())
     init_var(\$_POST['btn_cancel']);
     init_var(\$_POST['btn_submit']);
 
-    if(\$_POST['btn_cancel']) 
+    if(\$_POST['btn_cancel'])
     {
         log_action('Pressed cancel button');
         redirect("$List_View_Page");
@@ -47,7 +47,7 @@ if(xsrf_guard())
 
 require 'subclasses/$html_subclass_file';
 \$html = new $html_subclass_name;
-\$html->draw_header('CSV Exporter: $page_title', \$message, \$message_type);
+\$html->draw_header('CSV Exporter: %%', \$message, \$message_type);
 
 echo '<div class="container">';
 echo '<fieldset class="container_invisible">';

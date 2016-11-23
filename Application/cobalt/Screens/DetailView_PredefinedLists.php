@@ -5,24 +5,18 @@ init_SCV2();
 if(isset($_GET['List_ID']))
 {
     $List_ID = rawurldecode($_GET['List_ID']);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `List_Name`, `Remarks` 
-                            FROM `table_fields_predefined_list` 
-                            WHERE `List_ID`='$List_ID'");
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare("SELECT List_Name, Remarks FROM table_fields_predefined_list WHERE List_ID=:l_id");
+    $stmt->bindValue(':l_id', $List_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
     }
-    else die($mysqli->error);
-    $mysqli->close();
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT `List_Item` 
-                            FROM `table_fields_predefined_list_items` 
-                            WHERE `List_ID`='$List_ID' 
-                            ORDER BY `Number`");
+
+    $stmt = $d->prepare("SELECT List_Item FROM table_fields_predefined_list_items WHERE List_ID=:l_id ORDER BY Number");
+    $stmt->bindValue(':l_id', $List_ID);
 }
 elseif(xsrf_guard())
 {
@@ -50,14 +44,14 @@ drawTextField('List Name', 'List_Name',TRUE);
 drawTextField('Remarks','',TRUE);
 echo '<tr><td align=right> <br>List items: </td><td></td></tr>
       <tr><td></td><td><ol>';
-if($result = $mysqli->store_result()) while($row = $result->fetch_assoc()) echo '<li>' . $row['List_Item'];
+if($result = $stmt->execute()) while($row = $result->fetchArray()) echo '<li>' . $row['List_Item'];
 echo '</ol></td></tr>';
 ?>
 </table>
 </fieldset>
 <fieldset class="bottom">
 <?php
-drawBackButton(); 
+drawBackButton();
 ?>
 </fieldset>
 </div>

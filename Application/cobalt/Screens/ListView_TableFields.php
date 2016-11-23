@@ -11,19 +11,17 @@ if(xsrf_guard())
     }
 }
 
-$mysqli = connect_DB();
-$mysqli->real_query("SELECT a.Table_Name, b.Field_Name, b.Field_ID, b.Data_Type, b.Nullable, b.Control_Type, b.Label
-                        FROM `table` a, table_fields b  
-                        WHERE a.`Project_ID`='$_SESSION[Project_ID]' AND
-                              a.Table_ID = b.Table_ID 
-                        ORDER BY a.`Table_Name`, b.`Field_Name`");
+$d = connect_DB();
+$stmt = $d->prepare('SELECT a.Table_Name, b.Field_Name, b.Field_ID, b.Data_Type, b.Nullable, b.Control_Type, b.Label FROM "table" a, table_fields b
+                        WHERE a.Project_ID=:p_id AND a.Table_ID = b.Table_ID ORDER BY a.Table_Name, b.Field_Name');
+$stmt->bindValue(':p_id', $_SESSION['Project_ID']);
 
 drawHeader();
 drawPageTitle('List View: Table Fields',$errMsg);
 ?>
 
 <fieldset class="container">
-<?php drawButton('CANCEL');?><a class='blue' href='DefineTableFields.php'> Define New Field </a>
+<?php drawButton('CANCEL');?>&nbsp;<a class='blue' href='DefineTableFields.php'>Define New Field</a>
 <table border=1 width=100% class="listView">
 <tr class="listRowHead">
     <td>Operations</td>
@@ -35,11 +33,11 @@ drawPageTitle('List View: Table Fields',$errMsg);
     <td>Control Type</td>
 </tr>
 <?php
-    if($result = $mysqli->use_result())
+    if($result = $stmt->execute())
     {
         $a=0;
         $class='';
-        while($row = $result->fetch_assoc())
+        while($row = $result->fetchArray())
         {
             extract($row);
             if($a%2 == 0) $class='listRowEven';
@@ -53,12 +51,10 @@ drawPageTitle('List View: Table Fields',$errMsg);
             printf("<td> %s</td><td> %s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n", $row['Table_Name'], $row['Field_Name'], $row['Label'], $row['Data_Type'], $row['Nullable'], $row['Control_Type']);
             $a++;
         }
-        $result->close();
         if($a%2 == 0) $class='listRowEven';
         else $class='listRowOdd';
         echo '<tr><td colspan="7" class="' . $class . '">' . $a . ' records in total</td></tr>';
     }
-    else die($mysqli->error);
 ?>
 </table>
 <?php drawButton('CANCEL');?>

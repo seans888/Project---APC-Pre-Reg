@@ -32,19 +32,21 @@ if(xsrf_guard())
         extract($_POST);
         $errMsg = scriptCheckIfNull('DB Connection', $DB_Connection_ID);
 
+        //Verify that the DB_Connection_ID supplied is valid for this project
+        $d = connect_DB();
+        $stmt = $d->prepare("SELECT * FROM database_connection WHERE Project_ID=:p_id AND DB_Connection_ID=:db_id");
+        $stmt->bindValue(':p_id', $_SESSION['Project_ID']);
+        $stmt->bindValue(':db_id', $DB_Connection_ID);
 
-        //Verify that the DB_Connection_ID supplied is valid for this project/
-        $mysqli = connect_DB();
-        $mysqli->real_query("SELECT * FROM database_connection WHERE Project_ID='$_SESSION[Project_ID]' AND DB_Connection_ID='$DB_Connection_ID'");
-        if($result = $mysqli->use_result())
+        $num_rows = 0;
+        if($result = $stmt->execute())
         {
-            while($row = $result->fetch_assoc())
+            while($row = $result->fetchArray())
             {
-                //Nothing
+                ++$num_rows;
             }
-            $num_rows = $result->num_rows;
-            $result->close();
         }
+        $stmt->close();
 
         if($num_rows == 0)
         {
@@ -72,22 +74,24 @@ if(xsrf_guard())
             $time_start = microtime(true);
 
             //Get the database credentials supplied, establish connection to server.
-            $mysqli = connect_DB();
-            $mysqli->real_query("SELECT `Hostname`, `Username`, `Password`, `Database`, `DB_Connection_Name` FROM database_connection WHERE DB_Connection_ID='$DB_Connection_ID'");
-            if($result = $mysqli->store_result())
+            $stmt = $d->prepare("SELECT Hostname, Username, Password, Database, DB_Connection_Name FROM database_connection WHERE DB_Connection_ID=:db_id");
+            $stmt->bindValue(':db_id', $DB_Connection_ID);
+            if($result = $stmt->execute())
             {
-                $data = $result->fetch_assoc();
+                $data = $result->fetchArray();
                 extract($data);
             }
             else die('Error getting database credentials: '. $mysqli->error);
-            $mysqli->close();
+            $stmt->close();
+            $d->close();
 
             //...this is where we establish connection to server using retrieved credentials.
+            //FIXME: This should be replaced with appropriate data driver call to support multiple databases.
             $mysqli = @new mysqli($Hostname, $Username, $Password, $Database);
             if (mysqli_connect_errno())
             {
                 $errMsg = "There seems to be an error in the database connection you specified.";
-                   drawHeader($errMsg);
+                drawHeader($errMsg);
                 drawPageTitle('Import Tables', 'Cobalt cannot connect to the database using the database credentials specified in the chosen connection.');
                 echo '<div class="container_mid">
                       <fieldset class="top">
@@ -124,6 +128,7 @@ if(xsrf_guard())
                 $SCV2_tables = array('cobalt_reporter', 'cobalt_sst', 'person','system_log','system_settings','system_skins','user','user_links',
                                       'user_passport','user_passport_groups','user_role','user_role_links');
                 $tables_found = array();
+                //FIXME: This should be replaced with appropriate data driver call to support multiple databases.
                 $mysqli->real_query("SHOW TABLES");
                 if($result = $mysqli->store_result())
                 {
@@ -140,33 +145,89 @@ if(xsrf_guard())
             {
                 //Create a new database object, using SCV2 connection.
                 //We will use this object to insert records into SCV2 based on retrieved table and field info.
-                $SCV2_con  = connect_DB();
+                $d = connect_DB();
+                $d->exec("PRAGMA synchronous = OFF"); //performance, since we don't need enterprise-class reliability here
+
+                //Delete existing conflicting tables first before beginning INSERT transaction
+                foreach($checkbox as $key=>$current_table)
+                {
+                    $stmt = $d->prepare("SELECT Table_ID FROM \"table\" WHERE Table_Name = :t_name AND Project_ID = :p_id");
+                    $stmt->bindParam(':t_name', $current_table);
+                    $stmt->bindParam(':p_id', $_SESSION['Project_ID']);
+
+                    //Check if a table with this name already exists and delete it if it does exist.
+                    $result2 = $stmt->execute();
+                    $num_rows = 0;
+                    if($row = $result2->fetchArray())
+                    {
+                        ++$num_rows;
+                    }
+                    $stmt->close();
+
+                    if($num_rows > 0)
+                    {
+                        queryDeleteTable($row);
+                    }
+                }
+
+                $d->exec("BEGIN TRANSACTION");
+
+                $stmt_tbl = $d->prepare("INSERT INTO \"table\"(Table_ID, Project_ID, DB_Connection_ID, Table_Name, Remarks)
+                                        VALUES(:t_id, :p_id, :db_id, :t_name, '')");
+                $stmt_tbl->bindParam(':t_id', $Table_ID);
+                $stmt_tbl->bindParam(':p_id', $_SESSION['Project_ID']);
+                $stmt_tbl->bindParam(':db_id', $DB_Connection_ID);
+                $stmt_tbl->bindParam(':t_name', $current_table);
+
+                $stmt_pages = $d->prepare("INSERT INTO table_pages(Table_ID, Page_ID, Path_Filename)
+                                            VALUES(:t_id, :p_id, :p_fname)");
+                $stmt_pages->bindParam(':t_id', $Table_ID);
+                $stmt_pages->bindParam(':p_id', $Page_ID_param);
+                $stmt_pages->bindParam(':p_fname', $P_Fname_param);
+
+                $stmt_fields = $d->prepare("INSERT INTO table_fields(Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Auto_Increment, Control_Type, Label, In_Listview,
+                                                              Default_Value, Required, Size, Extra, Companion, Char_Set_Method, Char_Set_Allow_Space, Extra_Chars_Allowed,
+                                                              Allow_HTML_Tags, Trim_Value, Valid_Set, Date_Default, Drop_Down_Has_Blank, RPT_In_Report, RPT_Column_Format,
+                                                              RPT_Column_Alignment, RPT_Show_Sum)
+                                        VALUES(:f_id, :t_id, :f_name, :d_type, :nullable, :length, :attrib, :auto, :c_type, :label, :in_lv, :def_val, :req, :size, :extra,
+                                               :companion, :char_sm, :char_sas, :extra_ca, :a_html_t, :trim_val, :v_set, :date_def, :ddhb, :rpt_ir, :rpt_cf, :rpt_ca, :rpt_ss)");
+                $stmt_fields->bindParam(':f_id', $Field_ID);
+                $stmt_fields->bindParam(':t_id', $Table_ID);
+                $stmt_fields->bindParam(':f_name', $field_name);
+                $stmt_fields->bindParam(':d_type', $data_type);
+                $stmt_fields->bindParam(':nullable', $field_null);
+                $stmt_fields->bindParam(':length', $length);
+                $stmt_fields->bindParam(':attrib', $attribute);
+                $stmt_fields->bindParam(':auto', $auto_increment);
+                $stmt_fields->bindParam(':c_type', $control_type);
+                $stmt_fields->bindParam(':label', $label);
+                $stmt_fields->bindParam(':in_lv', $in_listview);
+                $stmt_fields->bindParam(':def_val', $Default_Value);
+                $stmt_fields->bindParam(':req', $Required);
+                $stmt_fields->bindParam(':size', $Size);
+                $stmt_fields->bindParam(':extra', $Extra);
+                $stmt_fields->bindParam(':companion', $Companion);
+                $stmt_fields->bindParam(':char_sm', $Char_Set_Method);
+                $stmt_fields->bindParam(':char_sas', $Char_Set_Allow_Space);
+                $stmt_fields->bindParam(':extra_ca', $Extra_Chars_Allowed);
+                $stmt_fields->bindParam(':a_html_t', $Allow_HTML_Tags);
+                $stmt_fields->bindParam(':trim_val', $Trim_Value);
+                $stmt_fields->bindParam(':v_set', $Valid_Set);
+                $stmt_fields->bindParam(':date_def', $Date_Default);
+                $stmt_fields->bindParam(':ddhb', $Drop_Down_Has_Blank);
+                $stmt_fields->bindParam(':rpt_ir', $RPT_In_Report);
+                $stmt_fields->bindParam(':rpt_cf', $RPT_Column_Format);
+                $stmt_fields->bindParam(':rpt_ca', $RPT_Column_Alignment);
+                $stmt_fields->bindParam(':rpt_ss', $RPT_Show_Sum);
+
+
 
                 foreach($checkbox as $key=>$current_table)
                 {
-                    //Check if a table with this name already exists and delete it if it does exist.
-                    $result2 = $SCV2_con->query("SELECT Table_ID FROM `table` WHERE Table_Name = '$current_table' AND Project_ID='$_SESSION[Project_ID]'");
-                    if($result2->num_rows > 0)
-                    {
-
-                        $param = $result2->fetch_array();
-                        queryDeleteTable($param, $SCV2_con);
-                        $result2->close();
-                    }
-
-
-                    $SCV2_con->query("OPTIMIZE TABLE `table_fields`");
 
                     //Get new Table_ID
                     $Table_ID = get_token();
-
-                    $SCV2_con->real_query("INSERT INTO `table`(Table_ID, Project_ID, DB_Connection_ID, Table_Name, Remarks)
-                                                        VALUES('$Table_ID',
-                                                               '$_SESSION[Project_ID]',
-                                                               '$DB_Connection_ID',
-                                                               '$current_table',
-                                                               '')"
-                                         );
+                    $stmt_tbl->execute();
 
                     $add_file = 'add_' . $current_table . '.php';
                     $edit_file = 'edit_' . $current_table . '.php';
@@ -180,30 +241,58 @@ if(xsrf_guard())
 
                     if($folder[$key] != '')
                     {
-                        $add_file               = $folder[$key] . '/' . $add_file;
-                        $edit_file              = $folder[$key] . '/' . $edit_file;
-                        $detail_file            = $folder[$key] . '/' . $detail_file;
-                        $list_file              = $folder[$key] . '/' . $list_file;
-                        $delete_file            = $folder[$key] . '/' . $delete_file;
-                        $CSV_file               = $folder[$key] . '/' . $CSV_file;
-                        $report_interface_file  = $folder[$key] . '/' . $report_interface_file;
-                        $report_result_file     = $folder[$key] . '/' . $report_result_file;
-                        $report_result_pdf_file = $folder[$key] . '/' . $report_result_pdf_file;
+                        $add_file               = trim($folder[$key]) . '/' . $add_file;
+                        $edit_file              = trim($folder[$key]) . '/' . $edit_file;
+                        $detail_file            = trim($folder[$key]) . '/' . $detail_file;
+                        $list_file              = trim($folder[$key]) . '/' . $list_file;
+                        $delete_file            = trim($folder[$key]) . '/' . $delete_file;
+                        $CSV_file               = trim($folder[$key]) . '/' . $CSV_file;
+                        $report_interface_file  = trim($folder[$key]) . '/' . $report_interface_file;
+                        $report_result_file     = trim($folder[$key]) . '/' . $report_result_file;
+                        $report_result_pdf_file = trim($folder[$key]) . '/' . $report_result_pdf_file;
                     }
-                    $SCV2_con->real_query("INSERT INTO `table_pages`(Table_ID, Page_ID, Path_Filename)
-                                            VALUES('$Table_ID','+nSXSR+3BnhhMmaBfNYLbZW1Klls8lauC+9jhXjFZPg=','$add_file'),
-                                                  ('$Table_ID','alOVwAQ+rL1qGsKXzH3ntUOTsz3+58x/CjrGwNCoLZU=','$edit_file'),
-                                                  ('$Table_ID','AoJ17xCURhNmjVr+1xWj5Ipr8Jqf461C5RKOc6oCY5s=','$detail_file'),
-                                                  ('$Table_ID','Mv+1k7TH5VAPb74N+qvQCfXbqWhlyILNtEvdMQHKIxA=','$list_file'),
-                                                  ('$Table_ID','qWMTJddAsNYOu7YBrSc/AV79roA/630phvlC4N6Z7KI=','$delete_file'),
-                                                  ('$Table_ID','DMOnHB6R/wc6cXt89xU9OUTRxKMYr7mnlvpUZidmV7g=','$CSV_file'),
-                                                  ('$Table_ID','X0JsxS82n8sIFiKwpQCR9c99doOFEsHIxs4pDGZxg+8=','$report_interface_file'),
-                                                  ('$Table_ID','/0CxWVJHlM+Z9jATzhv6vAHQnuZZWS4URCnxcUxceXc=','$report_result_file'),
-                                                  ('$Table_ID','EAOGEEl9nxgSOWL/Rb5QoOYKSwEPz/eM8wakTQEEk3o=','$report_result_pdf_file')");
+
+                    $Page_ID_param = '+nSXSR+3BnhhMmaBfNYLbZW1Klls8lauC+9jhXjFZPg=';
+                    $P_Fname_param = $add_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'alOVwAQ+rL1qGsKXzH3ntUOTsz3+58x/CjrGwNCoLZU=';
+                    $P_Fname_param = $edit_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'AoJ17xCURhNmjVr+1xWj5Ipr8Jqf461C5RKOc6oCY5s=';
+                    $P_Fname_param = $detail_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'Mv+1k7TH5VAPb74N+qvQCfXbqWhlyILNtEvdMQHKIxA=';
+                    $P_Fname_param = $list_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'qWMTJddAsNYOu7YBrSc/AV79roA/630phvlC4N6Z7KI=';
+                    $P_Fname_param = $delete_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'DMOnHB6R/wc6cXt89xU9OUTRxKMYr7mnlvpUZidmV7g=';
+                    $P_Fname_param = $CSV_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'X0JsxS82n8sIFiKwpQCR9c99doOFEsHIxs4pDGZxg+8=';
+                    $P_Fname_param = $report_interface_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = '/0CxWVJHlM+Z9jATzhv6vAHQnuZZWS4URCnxcUxceXc=';
+                    $P_Fname_param = $report_result_file;
+                    $stmt_pages->execute();
+
+                    $Page_ID_param = 'EAOGEEl9nxgSOWL/Rb5QoOYKSwEPz/eM8wakTQEEk3o=';
+                    $P_Fname_param = $report_result_pdf_file;
+                    $stmt_pages->execute();
 
                     $mysqli->real_query("SHOW COLUMNS FROM `$current_table`");
                     if($result2 = $mysqli->store_result())
                     {
+                        //IMPORTER METADATA INTERPRETATION SCRIPT ***************************
+                        $listview_counter = 0;
                         for($b=0; $b<$result2->num_rows; $b++)
                         {
                             $data = $result2->fetch_assoc();
@@ -212,6 +301,27 @@ if(xsrf_guard())
                             $field_key   = $data['Key'];
                             $field_extra = $data['Extra'];
                             $field_null  = $data['Null'];
+                            if($field_null == 'NO') $field_null = 'FALSE';
+                            elseif($field_null == 'YES') $field_null = 'TRUE';
+
+
+                            $Default_Value = '';
+                            $Required = 'TRUE';
+                            $Size = '';
+                            $Extra = '';
+                            $Companion = '';
+                            $Char_Set_Method = '';
+                            $Char_Set_Allow_Space = 'TRUE';
+                            $Extra_Chars_Allowed = '';
+                            $Allow_HTML_Tags = 'FALSE';
+                            $Trim_Value = 'trim';
+                            $Valid_Set = '';
+                            $Date_Default = '';
+                            $Drop_Down_Has_Blank = 'TRUE';
+                            $RPT_In_Report = 'TRUE';
+                            $RPT_Column_Format = 'normal';
+                            $RPT_Column_Alignment = 'left';
+                            $RPT_Show_Sum = 'FALSE';
 
                             $control_type = '';
                             $no_parentheses = array('double','float','date','text','tinytext','mediumtext','longtext');
@@ -247,7 +357,15 @@ if(xsrf_guard())
                                 case 'tinyint'      :
                                 case 'mediumint'    :
                                 case 'bigint'       :
-                                case 'int'          : $data_type = 'integer'; break;
+                                case 'int'          : $data_type               = 'integer';
+                                                      $length                  = '20';
+                                                      $Char_Set_Method         = 'generate_num_set';
+                                                      $Extra_Chars_Allowed     = '-';
+                                                      $Char_Set_Allow_Space    = 'FALSE';
+                                                      $RPT_Column_Format       = 'number_format2';
+                                                      $RPT_Column_Alignment    = 'right';
+                                                      $RPT_Show_Sum            = 'TRUE';
+                                                      break;
 
                                 case 'enum'         :
                                 case 'char'         :
@@ -256,7 +374,24 @@ if(xsrf_guard())
                                 case 'bool'         : $data_type = 'bool'; break;
 
                                 case 'double'       :
-                                case 'float'        : $data_type = 'double or float'; break;
+                                case 'float'        : $data_type               = 'double or float';
+                                                      $length                  = '20';
+                                                      $Char_Set_Method         = 'generate_num_set';
+                                                      $Extra_Chars_Allowed     = '- . ,';
+                                                      $Char_Set_Allow_Space    = 'FALSE';
+                                                      $RPT_Column_Format       = 'number_format2';
+                                                      $RPT_Column_Alignment    = 'right';
+                                                      $RPT_Show_Sum            = 'TRUE';
+                                                      break;
+
+                                case 'decimal'      : $length                  = '20';
+                                                      $Char_Set_Method         = 'generate_num_set';
+                                                      $Extra_Chars_Allowed     = '. ,'; //mysql doesn't accept (-) character if decimal
+                                                      $Char_Set_Allow_Space    = 'FALSE';
+                                                      $RPT_Column_Format       = 'number_format2';
+                                                      $RPT_Column_Alignment    = 'right';
+                                                      $RPT_Show_Sum            = 'TRUE';
+                                                      break;
 
                                 case 'text'         :
                                 case 'tinytext'     :
@@ -277,7 +412,25 @@ if(xsrf_guard())
                                 $control_type = 'textarea';
                             }
 
-                            $in_listview = 'yes'; //this is the default, might be changed by some conditions found below
+                            if($control_type == 'textbox')
+                            {
+                                $Size = '60';
+
+                                if($data_type == 'decimal')
+                                {
+                                    $Size = '20';
+                                }
+                                elseif($data_type == 'year')
+                                {
+                                    $Size = '4';
+                                }
+                            }
+                            elseif($control_type == 'textarea')
+                            {
+                                $Size = '58;5';
+                            }
+
+                            $in_listview = 'TRUE'; //this is the default, might be changed by some conditions found below
                             if(strtoupper($field_name) == 'ID')
                             {
                                 $label = 'ID';
@@ -301,36 +454,45 @@ if(xsrf_guard())
                                 }
                             }
 
+                            //rpt column settings override: 'ID' fields of any sort (i.e., fields named like 'id', 'emp_id', 'id_number', etc)
+                            //should be explicitly set to normal format (just in case their data type is int) and center alignment, and no sum.
+                            if(strpos($label, 'ID') !== FALSE)
+                            {
+                                $RPT_Column_Format    = 'normal';
+                                $RPT_Column_Alignment = 'center';
+                            }
+
                             if($field_key=="PRI") $attribute = 'primary key';
                             else $attribute = '';
 
-                            $auto_increment = 'N';
+                            $auto_increment = 'FALSE';
                             if($field_extra == 'auto_increment')
                             {
                                 $control_type='none';
-                                $in_listview = 'no';
-                                $auto_increment = 'Y';
+                                $in_listview = 'FALSE';
+                                $auto_increment = 'TRUE';
+                                $Required = 'FALSE';
                             }
+
+                            if($listview_counter > 6)
+                            {
+                                $in_listview = 'FALSE';
+                            }
+
+                            if($in_listview == 'TRUE')
+                            {
+                                ++$listview_counter;
+                            }
+
 
                             //Get new Field_ID
                             $Field_ID = get_token();
-
-                            $SCV2_con->real_query("INSERT INTO `table_fields`(Field_ID, Table_ID, Field_Name, Data_Type, Nullable, Length, Attribute, Auto_Increment, Control_Type, Label, In_Listview)
-                                                                VALUES('$Field_ID',
-                                                                       '$Table_ID',
-                                                                       '$field_name',
-                                                                       '$data_type',
-                                                                       '$field_null',
-                                                                       '$length',
-                                                                       '$attribute',
-                                                                       '$auto_increment',
-                                                                       '$control_type',
-                                                                       '$label',
-                                                                       '$in_listview')");
+                            $stmt_fields->execute();
                         }
                     }
                     else die('Error getting columns of table: ' . $mysqli->error());
                 }
+                $d->exec("END TRANSACTION");
                 $time_end = microtime(true);
                 $process_time = $time_end - $time_start;
 

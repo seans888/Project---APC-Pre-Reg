@@ -50,7 +50,7 @@ if(xsrf_guard())
 
 require 'subclasses/cobalt_sst_html.php';
 $html = new cobalt_sst_html;
-$html->draw_header('CSV Exporter: Cobalt SST', $message, $message_type);
+$html->draw_header('CSV Exporter: %%', $message, $message_type);
 
 echo '<div class="container">';
 echo '<fieldset class="container_invisible">';

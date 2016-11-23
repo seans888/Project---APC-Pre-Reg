@@ -4,7 +4,7 @@ class user_role_links_rpt extends reporter
 {
     var $tables='user_role_links';
     var $session_array_name = 'USER_ROLE_LINKS_REPORT_CUSTOM';
-    var $report_title = 'User Role Links: Custom Reporting Tool';
+    var $report_title = '%%: Custom Reporting Tool';
     var $html_subclass = 'user_role_links_html';
     var $data_subclass = 'user_role_links';
     var $result_page = 'reporter_result_user_role_links.php';

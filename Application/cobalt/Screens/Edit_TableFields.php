@@ -5,43 +5,23 @@ init_SCV2();
 if(isset($_GET['Field_ID']))
 {
     $Field_ID = rawurldecode($_GET['Field_ID']);
-    
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Table_ID, Field_Name, Field_ID, Data_Type, Control_Type, 
-                                Length, Attribute, Label, In_Listview, Nullable
-                            FROM `table_fields`
-                            WHERE Field_ID = '$Field_ID'");
-                            
-    if($result = $mysqli->use_result())
+
+    $d = connect_DB();
+    $stmt = $d->prepare('SELECT * FROM table_fields WHERE Field_ID = :f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
+        $data = $result->fetchArray();
         extract($data);
+        $result->finalize();
     }
-    else die($mysqli->error);
-    $mysqli->close();
 
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Book_List_Generator 
-                            FROM `table_fields_book_list` 
-                            WHERE Field_ID='$Field_ID'");
-    if($result = $mysqli->store_result())
+    $stmt = $d->prepare("SELECT List_ID FROM table_fields_list WHERE Field_ID=:f_id");
+    $stmt->bindValue(':f_id', $Field_ID);
+    if($result = $stmt->execute())
     {
-        $data = $result->fetch_assoc();
-        $result->close();
-        if($data!="") extract($data);
-        else $Book_List_Generator="NONE";
-    }
-    else die($mysqli->error);
-    $mysqli->close();
-
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT List_ID 
-                            FROM `table_fields_list`  
-                            WHERE Field_ID='$Field_ID'");
-    if($result = $mysqli->use_result())
-    {
-        $data = $result->fetch_assoc();
-        if($data!="") 
+        $data = $result->fetchArray();
+        if($data!="")
         {
             extract($data);
             //Additionally, if there is a predefined list, we should set the dropdown type to "Predefined".
@@ -49,41 +29,19 @@ if(isset($_GET['Field_ID']))
         }
         else $List_Name="NONE";
     }
-    else die($mysqli->error);
-    $mysqli->close();
 
-
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Validation_Routine 
-                            FROM `table_fields_secondary_validation` 
-                            WHERE Field_ID='$Field_ID'");
-    if($result = $mysqli->store_result())
+    $stmt = $d->prepare('SELECT Select_Field_ID, Display FROM table_fields_list_source_select WHERE Field_ID=:f_id');
+    $stmt->bindValue(':f_id', $Field_ID);
+    if($result = $stmt->execute())
     {
-        $particularsCount = $result->num_rows;
-        for($a=0;$a<$particularsCount;$a++)
+        $selectCount = 0;
+        while($data = $result->fetchArray())
         {
-            $data = $result->fetch_assoc();
-            $Validation_Routine[$a] = $data['Validation_Routine'];
-        }
-    }
-    else die($mysqli->error);
-    $mysqli->close();
-
-
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Select_Field_ID, Display 
-                            FROM `table_fields_list_source_select` 
-                            WHERE Field_ID='$Field_ID'");
-    if($result = $mysqli->store_result())
-    {
-        $selectCount = $result->num_rows;
-        for($a=0;$a<$selectCount;$a++)
-        {
-            $data = $result->fetch_assoc();
             $Select_Field_ID[$a] = $data['Select_Field_ID'];
             $Select_Field_Display[$a] =  $data['Display'];
+            ++$selectCount;
         }
-        
+
         //Additionally, we want to know if $selectCount actually has a value of 1 or more.
         //This is because we want to know if we will assign "Source" to $DropdownType.
         //We have to do this like this because the value of $DropdownType is actually never stored
@@ -91,28 +49,22 @@ if(isset($_GET['Field_ID']))
         //value is discarded into oblivion after the form is successfully submitted and processed.
         if($selectCount > 0) $DropdownType = 'Source';
     }
-    else die($mysqli->error);
-    $mysqli->close();
 
-    $mysqli = connect_DB();
-    $mysqli->real_query("SELECT Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector 
-                                                FROM `table_fields_list_source_where` 
-                                                WHERE Field_ID='$Field_ID'");
-    if($result = $mysqli->store_result())
+    $stmt = $d->prepare("SELECT Where_Field_ID, Where_Field_Operand, Where_Field_Value, Where_Field_Connector
+                            FROM table_fields_list_source_where WHERE Field_ID=:f_id");
+    $stmt->bindValue(':f_id', $Field_ID);
+    if($result = $stmt->execute())
     {
-        $whereCount = $result->num_rows;
-        for($a=0;$a<$whereCount;$a++)
+        $whereCount = 0;
+        while($data = $result->fetchArray())
         {
-            $data = $result->fetch_assoc();
             $Where_Field_ID[$a] = $data['Where_Field_ID'];
             $Where_Field_Operand[$a] = $data['Where_Field_Operand'];
             $Where_Field_Value[$a] = $data['Where_Field_Value'];
             $Where_Field_Connector[$a] = $data['Where_Field_Connector'];
+            ++$whereCount;
         }
     }
-    else die($mysqli->error);
-    $mysqli->close();
-    
 }
 elseif(xsrf_guard())
 {
@@ -130,24 +82,32 @@ elseif(xsrf_guard())
     {
         extract($_POST);
     }
-    
+
     if($_POST['btnSubmit'])
     {
-        init_var($In_Listview); //need to check if initialize because this comes from a radio control
+        init_var($DropdownType);
+
         $errMsg = scriptCheckIfNull('Table', $Table_ID,
                                     'Field Name', $Field_Name,
                                     'Data Type', $Data_Type,
+                                    'Nullable', $Nullable,
                                     'Length', $Length,
                                     'Attribute', $Attribute,
+                                    'Auto Increment', $Auto_Increment,
+                                    'Show in List View Page', $In_Listview,
                                     'Control Type', $Control_Type,
-                                    'Show in list view', $In_Listview);
-    
-        if($Control_Type != "None") $errMsg = scriptCheckIfNull('Label', $Label);
-        if($Control_Type == "Special_Textbox") $errMsg .= scriptCheckIfNull('Book List Generator', $Book_List_Generator);
-        elseif($Control_Type == "Radio") $errMsg .= scriptCheckIfNull('Predefined List', $List_ID);
-        elseif($Control_Type == "Drop-down List")
+                                    'Drop-Down List Has Blank', $Drop_Down_Has_Blank,
+                                    'Required', $Required,
+                                    'Char Set Allow Space', $Char_Set_Allow_Space,
+                                    'Allow HTML Tags', $Allow_HTML_Tags,
+                                    'Reporter: In Report', $RPT_In_Report,
+                                    'Reporter: Column Alignment', $RPT_Column_Alignment);
+
+        if($Control_Type != "none") $errMsg = scriptCheckIfNull('Label', $Label);
+        if($Control_Type == "radio") $errMsg .= scriptCheckIfNull('Predefined List', $List_ID);
+        elseif($Control_Type == "drop-down list")
         {
-            $errMsg .=    scriptCheckIfNull('DropdownType', $DropdownType);
+            $errMsg .=    scriptCheckIfNull('Drop-down Type (Additional Option #1)', $DropdownType);
 
             if($DropdownType=="Source")
             {
@@ -157,7 +117,7 @@ elseif(xsrf_guard())
                     $errMsg .= scriptCheckIfNull("SELECT parameter field #$b", $Select_Field_ID[$a],
                                                  "SELECT parameter display setting #$b", $Select_Field_Display[$a]);
                 }
-                
+
                 for($a=0;$a<$whereCount;$a++)
                 {
                     $b = $a + 1;
@@ -174,13 +134,6 @@ elseif(xsrf_guard())
             {
                 $errMsg .= scriptCheckIfNull('Predefined List', $List_ID);
             }
-        }
-        
-        for($a=0;$a<$particularsCount;$a++)
-        {
-            $b = $a + 1;
-            if($particularsCount > 1 && trim($Validation_Routine[0])!= "") 
-                $errMsg .= scriptCheckIfNull("Validation Routine #$b", $Validation_Routine[$a]);
         }
 
         if($errMsg=="")
@@ -202,85 +155,118 @@ echo '<input type="hidden" name="Field_ID" value="' . $Field_ID . '">';
 Modify Table Field
 </fieldset>
 <fieldset class="middle">
-<table class="inputForm">
-<?php
-drawSelectField('drawTable', 'Table','Table_ID');
-drawTextField('Field Name', 'Field_Name');
-drawSelectField('drawDataType', 'Data Type', 'Data_Type');
-drawSelectField('drawNullable', 'Nullable', 'Nullable');
-drawTextField('Length');
-drawSelectField('drawAttribute','Attribute');
-drawSelectField('drawControlType','Control Type', 'Control_Type');
-drawTextField('Label');
 
-$arrayItems = array(
-                    'Items' => array('Yes','No'),
-                    'Values'=> array('yes','no'),
-                    'PerLine' => FALSE
-                   );
-drawRadioField($arrayItems,'Show in list view?','In_Listview');
+    <?php
+    $arrayItems = array(
+                        'Items' => array('TRUE','FALSE'),
+                        'Values'=> array('TRUE','FALSE'),
+                        'PerLine' => FALSE
+                       );
 
-$arrayMultiField = array(
-                         'FieldLabels' => array('VALIDATION ROUTINE'),
-                         'FieldControls' => array('drawValidationRoutine'),
-                         'FieldVariables' => array('Validation_Routine')
-                        );
-drawMultiFieldAuto('<br>Secondary validation routines for this field<br>', $arrayMultiField);
+    fieldsetStart('Data Settings');
+    drawSelectField('drawTable', 'Table', 'Table_ID');
+    drawTextField('Field Name', 'Field_Name');
+    drawSelectField('drawDataType', 'Data Type', 'Data_Type');
+    drawRadioField($arrayItems, 'Nullable');
+    drawTextField('Length');
+    drawSelectField('drawAttribute', 'Attribute');
+    drawRadioField($arrayItems, 'Auto Increment', 'Auto_Increment');
+    fieldsetEnd();
 
-?>
-<tr><td colspan="2">Additional Options<br><br></td></tr>
-<tr><td colspan="2">
-    <ol class="normal">
-    <li> If Control Type is 'Special Textbox', choose a Book List Generator:<br>
-        <?php drawSelectField('drawBookListGenerator','Book List Generator: ','Book_List_Generator', FALSE); ?>
-        <br><br>
-            
-    <li> If Control Type is "Drop-down List", choose the list source type: <br>
-        <?php
-        $arrayItems = array(
-                            'Items' => array('Predefined list (choose specific list in #3)','SQL generated'),
-                            'Values'=> array('Predefined','Source'),
-                            'PerLine' => TRUE
-                           );
-        drawRadioField($arrayItems,'','DropdownType', FALSE);
-        ?><br>
+    fieldsetStart('HTML Settings');
+    drawRadioField($arrayItems, 'Show in List View Page', 'In_Listview');
+    drawSelectField('drawControlType', 'Control Type', 'Control_Type');
+    drawTextField('Label');
+    drawTextField('Size');
+    drawTextField('Extra', 'Extra', FALSE, '', TRUE, FALSE, 0, 'size="32"');
+    drawTextField('Companion', 'Companion', FALSE, 'textarea');
+    drawRadioField($arrayItems, 'Drop-Down List Has Blank', 'Drop_Down_Has_Blank');
+    fieldsetEnd();
 
+    fieldsetStart('Validation Settings');
+    drawRadioField($arrayItems, 'Required');
+    drawSelectField('drawCharSetMethod', 'Char Set Method', 'Char_Set_Method');
+    drawRadioField($arrayItems,'Char Set Allow Space', 'Char_Set_Allow_Space');
+    drawTextField('Extra Chars Allowed', 'Extra_Chars_Allowed');
+    drawTextField('Valid Set', 'Valid_Set');
+    fieldsetEnd();
+
+    fieldsetStart('Reporter Settings');
+    drawRadioField($arrayItems, 'In Report', 'RPT_In_Report');
+    drawTextField('Column Format', 'RPT_Column_Format');
+    drawSelectField('drawColumnAlignment', 'Column Alignment', 'RPT_Column_Alignment');
+    drawRadioField($arrayItems, 'Show Sum', 'RPT_Show_Sum');
+    fieldsetEnd();
+
+    fieldsetStart('Defaults');
+    drawTextField('Default Value', 'Default_Value');
+    drawTextField('Date Default', 'Date_Default');
+    fieldsetEnd();
+
+    fieldsetStart('Misc Settings');
+    drawRadioField($arrayItems, 'Allow HTML Tags', 'Allow_HTML_Tags');
+    drawSelectField('drawTrimValue', 'Trim Value', 'Trim_Value');
+    fieldsetEnd();
+
+    fieldsetStart('Additional Options');
+    ?>
+    <tr><td colspan="2">
+        <ol class="normal">
+            <li> If Control Type is "Drop-down List", choose the list source type: <br>
+
+    <?php
+    $arrayItems = array(
+                        'Items' => array('Predefined list (choose specific list in #2)','SQL generated'),
+                        'Values'=> array('Predefined','Source'),
+                        'PerLine' => TRUE
+                       );
+    drawRadioField($arrayItems,'','DropdownType', FALSE);
+    ?>
+
+    <br>
     <li> If Control Type is 'Radio', choose a Predefined List. <br>
-        Or if Control Type is 'Drop-down List' but you still want <br> 
-        to use a predefined list, choose the list you want here. <br>
-        <?php drawSelectField('drawPredefinedList','Predefined List: ','List_ID',FALSE); ?>
-        <br><br>
+    Or if Control Type is 'Drop-down List' but you still want <br>
+    to use a predefined list, choose the list you want here. <br>
 
+    <?php drawSelectField('drawPredefinedList','Predefined List: ','List_ID',FALSE); ?>
+
+    <br><br>
     <li> If Control Type is 'Drop-down List' and you chose <br>
-        SQL generated source, specify the parameters here:<br>
-            <table align=center border=1>
-            <tr><td>
-                <table><tr><td>
-            <?php
+    SQL generated source, specify the parameters here:<br>
+        <table style="margin: 20px auto 20px auto; text-align: center">
+        <tr><td>
+            <table><tr><td>
 
-if($selectCount==0)
-{
-    $selectCount = 2;
-    $Select_Field_Display[0] = 'No';
-    $Select_Field_Display[1] = 'Yes';
-}
-$arrayMultiField = array("FieldLabels" => array('FIELD','DISPLAY (NO means use as value)'),
-                         "FieldControls" => array('drawListSourceSelectField', 'drawListSourceSelectFieldDisplay'),
-                         "FieldVariables" => array('Select_Field_ID','Select_Field_Display'));
-drawMultiFieldAuto('List SELECT Parameters', $arrayMultiField, 'numSelect', 'selectCount');
+    <?php
+    if(!isset($selectCount))
+    {
+        $selectCount = 2;
+        $Select_Field_Display[0] = 'No';
+        $Select_Field_Display[1] = 'Yes';
+    }
+    $arrayMultiField = array(
+                             "FieldLabels" => array('FIELD','DISPLAY (NO means use as value)'),
+                             "FieldControls" => array('drawListSourceSelectField', 'drawListSourceSelectFieldDisplay'),
+                             "FieldVariables" => array('Select_Field_ID','Select_Field_Display')
+                            );
+    drawMultiFieldAuto('List SELECT Parameters', $arrayMultiField, 'numSelect', 'selectCount');
 
-$arrayMultiField = array("FieldLabels" => array('FIELD','OPERAND','VALUE','CONNECTOR'),
-                         "FieldControls" => array('drawListSourceWhereField', 'drawListSourceWhereFieldOperand',
-                                                  'drawListSourceWhereFieldValue', 'drawListSourceWhereFieldConnector'),
-                         "FieldVariables" => array('Where_Field_ID','Where_Field_Operand','Where_Field_Value','Where_Field_Connector'));
-drawMultiFieldAuto('List WHERE Parameters', $arrayMultiField, 'numWhere', 'whereCount');
-            ?>
-                </td></tr></table>
+    $arrayMultiField = array(
+                             "FieldLabels" => array('FIELD','OPERAND','VALUE','CONNECTOR'),
+                             "FieldControls" => array('drawListSourceWhereField', 'drawListSourceWhereFieldOperand',
+                                                      'drawListSourceWhereFieldValue', 'drawListSourceWhereFieldConnector'),
+                             "FieldVariables" => array('Where_Field_ID','Where_Field_Operand','Where_Field_Value','Where_Field_Connector')
+                            );
+    drawMultiFieldAuto('List WHERE Parameters', $arrayMultiField, 'numWhere', 'whereCount');
+    ?>
+
             </td></tr></table>
+        </td></tr></table>
     </ol>
-    </td>
-</tr>
-</table>
+    </td></tr>
+
+    <?php fieldsetEnd(); ?>
+
 </fieldset>
 <fieldset class="bottom">
 <?php drawSubmitCancel(); ?>

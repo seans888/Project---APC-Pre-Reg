@@ -1,14 +1,8 @@
 <?php
-
-function transform_datetime($timestamp)
-{
-    return date("Y-m-d h:i:sa", $timestamp);
-}
-
 class system_log_dd
 {
     static $table_name = 'system_log';
-    static $readable_name = 'System Log';
+    static $readable_name = 'Security Monitor';
 
     static function load_dictionary()
     {
@@ -21,7 +15,6 @@ class system_log_dd
                                               'attribute'=>'primary key',
                                               'control_type'=>'none',
                                               'size'=>0,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Entry ID',
                                               'extra'=>'',
@@ -49,7 +42,6 @@ class system_log_dd
                                               'attribute'=>'',
                                               'control_type'=>'textbox',
                                               'size'=>60,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Ip Address',
                                               'extra'=>'',
@@ -77,7 +69,6 @@ class system_log_dd
                                               'attribute'=>'',
                                               'control_type'=>'textbox',
                                               'size'=>60,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'User',
                                               'extra'=>'',
@@ -105,7 +96,6 @@ class system_log_dd
                                               'attribute'=>'',
                                               'control_type'=>'textbox',
                                               'size'=>60,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Datetime',
                                               'extra'=>'',
@@ -122,7 +112,7 @@ class system_log_dd
                                               'list_type'=>'',
                                               'list_settings'=>array(''),
                                               'rpt_in_report'=>TRUE,
-                                              'rpt_column_format'=>'transform_datetime',
+                                              'rpt_column_format'=>'normal',
                                               'rpt_column_alignment'=>'left',
                                               'rpt_show_sum'=>FALSE),
                         'action' => array('value'=>'',
@@ -133,7 +123,6 @@ class system_log_dd
                                               'attribute'=>'',
                                               'control_type'=>'textarea',
                                               'size'=>'58;5',
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Action',
                                               'extra'=>'',
@@ -161,7 +150,6 @@ class system_log_dd
                                               'attribute'=>'',
                                               'control_type'=>'textbox',
                                               'size'=>60,
-                                              'upload_path'=>'',
                                               'drop_down_has_blank'=>TRUE,
                                               'label'=>'Module',
                                               'extra'=>'',

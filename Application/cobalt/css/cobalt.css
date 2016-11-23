@@ -224,8 +224,8 @@ a.linkCC:active {
 }
 
 body {
-    background-color: #ffb638;
-    background-color: #ffb135;
+    background-image: url("../images/bg.png");
+    background-repeat: repeat;
     font-family: "Display Font";
     font-size: 14px;
     margin-right: 0px;
@@ -844,5 +844,3 @@ td.menu {
 td.menu:hover {
     background-color: #666666;
 }
-
-

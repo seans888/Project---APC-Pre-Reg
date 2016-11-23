@@ -2,19 +2,26 @@
 
 function multifield_setup($setup_type, $Field_Name, $Field_ID)
 {
+    $d = connect_DB();
     $setup_content='';
     if($setup_type == 'Predefined List')
     {
-        $mysqli = connect_DB();
-        $mysqli->real_query("SELECT List_ID FROM table_fields_list WHERE Field_ID='$Field_ID'");
-        if($result = $mysqli->store_result())
+        $stmt = $d->prepare("SELECT List_ID FROM table_fields_list WHERE Field_ID = :f_id");
+        $stmt->bindValue(':f_id', $Field_ID);
+        if($result = $stmt->execute())
         {
-            if($result->num_rows > 0)
+            $arr_list = array();
+            while($data = $result->fetchArray(SQLITE3_NUM))
             {
                 $create_query = FALSE;
-                $data = $result->fetch_assoc();
-                extract($data);
-
+                $arr_list[] = $data[0];
+            }
+        }
+        $stmt->close();
+        if(is_array($arr_list)) //We really only need ths here to retain the pre-refactoring indentation so we don't have to touch all the heredocs
+        {
+            foreach($arr_list as $List_ID)
+            {
                 //Now, get the items from the assigned list, and assign them to a string variable formatted
                 //as an array definition which will be written to the resulting module.
                 //Format:
@@ -29,11 +36,11 @@ function multifield_setup($setup_type, $Field_Name, $Field_ID)
                 $options = ''; //variable whose contents will be printed in the generated module (containing the $arrayItems var in the example)
                 $options_items = ''; //will correspond to the 'Items' index in the options array.
                 $options_values = '';//will correspond to the 'Values' index in the options array.
-                $inner_db_handle = connect_DB();
-                $inner_db_handle->real_query("SELECT List_Item FROM table_fields_predefined_list_items WHERE List_ID='$List_ID'");
-                if($inner_result = $inner_db_handle->use_result())
+                $stmt = $d->prepare("SELECT List_Item FROM table_fields_predefined_list_items WHERE List_ID=:l_id");
+                $stmt->bindValue(':l_id', $List_ID);
+                if($result = $stmt->execute())
                 {
-                    while($data = $inner_result->fetch_assoc())
+                    while($data = $result->fetchArray())
                     {
                         extract($data);
                         $List_Item = str_replace("'", "\'", $List_Item); //single quotes need escaping
@@ -41,7 +48,7 @@ function multifield_setup($setup_type, $Field_Name, $Field_ID)
                         $options_values .= "'$List_Item',";
                     }
                 }
-                else die($inner_db_handle->error);
+                $stmt->close();
 
                 $options_items = substr($options_items,0,strlen($options_items)-1); //We just removed the last comma.
                 $options_values = substr($options_values,0,strlen($options_values)-1); //We just removed the last comma.
@@ -60,26 +67,23 @@ EOD;
         $options
 EOD;
             }
-            $result->close();
-            $mysqli->close();
         }
-        else die($mysqli_2->error);
     }
     elseif($setup_type == 'SQL Generated')
     {
-        $mysqli = connect_DB();
-        $mysqli->real_query("SELECT b.Field_Name AS `new_field`, a.Display, c.Table_Name 
-                             FROM table_fields_list_source_select a, table_fields b, `table` c 
-                             WHERE a.Field_ID='$Field_ID' AND 
-                                   a.Select_Field_ID=b.Field_ID AND 
+        $stmt = $d->prepare("SELECT b.Field_Name AS new_field, a.Display, c.Table_Name
+                             FROM table_fields_list_source_select a, table_fields b, \"table\" c
+                             WHERE a.Field_ID=:f_id AND
+                                   a.Select_Field_ID=b.Field_ID AND
                                    b.Table_ID = c.Table_ID");
-        if($result = $mysqli->use_result())
+        $stmt->bindValue(':f_id', $Field_ID);
+        if($result = $stmt->execute())
         {
             $select_fields = array();
             $select_tables = array();
             $select_display = 'array(';
             $select_value = ''; //We'll only accept one value for the select field's value, so we don't need an array ^_^
-            while($data = $result->fetch_assoc())
+            while($data = $result->fetchArray())
             {
                 extract($data);
                 if(!in_array($new_field, $select_fields))
@@ -88,42 +92,41 @@ EOD;
                 if(!in_array($Table_Name, $select_tables))
                     $select_tables[] = $Table_Name;
 
-                if($Display=="Yes") 
+                if($Display=="Yes")
                     $select_display .= "'$new_field', ";
-                else 
+                else
                     $select_value = $new_field;
             }
-            $result->close();
-            $mysqli->close();
             $select_display = substr($select_display, 0, strlen($select_display) - 2); //remove last comma and space.
             $select_display .= ');'; //close the array declaration.
         }
-        else die($mysqli->error);
+        $stmt->close();
 
-        $mysqli = connect_DB();
-        $mysqli->real_query("SELECT b.Field_Name, Where_Field_Operand, Where_Field_Value, Where_Field_Connector 
-                             FROM table_fields_list_source_where a, table_fields b 
-                             WHERE a.Field_ID='$Field_ID' AND 
-                             	   a.Where_Field_ID=b.Field_ID");
-
-        if($result = $mysqli->store_result())
+        $stmt = $d->prepare("SELECT b.Field_Name, Where_Field_Operand, Where_Field_Value, Where_Field_Connector
+                             FROM table_fields_list_source_where a, table_fields b
+                             WHERE a.Field_ID=:f_id AND a.Where_Field_ID=b.Field_ID");
+        $stmt->bindValue(':f_id', $Field_ID);
+        if($result = $stmt->execute())
         {
-            if($result->num_rows > 0)
+            $num_rows = 0;
+
+            $where_fields = array();
+            while($data = $result->fetchArray())
             {
-                $where_fields = array();
-                while($data = $result->fetch_assoc())
-                {
-                    extract($data);
-                    $where_fields[] = array('Field' => $Field_Name, 
-                                            'Operand' => $Where_Field_Operand, 
-                                            'Value' => $Where_Field_Value, 
-                                            'Connector' => $Where_Field_Connector);
-                }
-                $result->close();
-                $mysqli->close();
+                ++$num_rows;
+                extract($data);
+                $where_fields[] = array('Field' => $Field_Name,
+                                        'Operand' => $Where_Field_Operand,
+                                        'Value' => $Where_Field_Value,
+                                        'Connector' => $Where_Field_Connector);
             }
-            else $where_fields = NULL;
+
+            if($num_rows == 0)
+            {
+                $where_fields = NULL;
+            }
         }
+        $stmt->close();
 
         //****Create the query here.*********
         //Set the SELECT clause (fields)
@@ -161,7 +164,7 @@ EOD;
             foreach($where_fields as $where)
             {
                 if($where['Connector']=='NONE') $where['Connector'] = '';
-                $select_query .= $where['Field'] . $where['Operand'] . "'" . $where['Value'] . "' " . $where['Connector']; 
+                $select_query .= $where['Field'] . $where['Operand'] . "'" . $where['Value'] . "' " . $where['Connector'];
             }
         }
 

@@ -82,15 +82,21 @@ function custom_error_handler($err_num, $err_str, $err_file, $err_line)
             elseif(substr($err_str,0,18) == 'MISSING EXTENSION:')
             {
                 $module_name = substr($err_str, 19);
-                $msg = "Required PHP module not found: $module_name.</br>
+                $msg = "Required PHP module not found: $module_name.<br>
                        Please install the PHP $module_name module and make sure it is enabled.";
                 displayErrors($msg);
             }
             elseif(substr($err_str,0,14) == 'MISSING TABLE:')
             {
                 $table_name = substr($err_str, 15);
-                $msg = "Cobalt table not found: $table_name.</br>
+                /*
+                //Old message, using MySQL infra
+                $msg = "Cobalt table not found: $table_name.<br>
                        Have you imported the cobalt.sql file to properly create the Cobalt tables?";
+                */
+                $msg = "Cobalt table not found: $table_name.<br>
+                       If this error persists, you may need to force Cobalt to recreate its metadata store.
+                       <br>To force metadata recreation, delete the \"status\" file inside the cobalt/metadata directory.";
                 displayErrors($msg);
                 exit();
             }
@@ -101,15 +107,24 @@ function custom_error_handler($err_num, $err_str, $err_file, $err_line)
                        <br />Your version: " . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '.' . PHP_RELEASE_VERSION . ' (PHP Version ID ' . PHP_VERSION_ID . ')';
                 displayErrors($msg);
             }
-            elseif(substr($err_str,0,26) == 'Incorrect TARGET_DIRECTORY')
+            elseif(substr($err_str,0,43) == 'Cobalt "metadata" directory is not readable')
             {
-
-                $msg ="Cobalt's TARGET_DIRECTORY constant for the code generator is incorrectly defined!
-                       <br />This should be 'Generator/Projects', but it is currently defined as '" . TARGET_DIRECTORY . "'."
-                     ."<br /><br />You can correct this in Core/SCV2_Core.php inside the function init_SCV2(), or if you deliberately changed the TARGET_DIRECTORY constant, "
-                     ."you can disable this self-check in chooseProject.php by commenting out these two lines: "
-                     ."<br /> trigger_error('Incorrect TARGET_DIRECTORY', E_USER_ERROR); "
-                     ."<br /> \$stop_exec = TRUE; ";
+                $path = substr($err_str, 45);
+                $path = substr($path, 0, strlen($path)-2);
+                $msg ="$err_str
+                       <br />This directory needs to be world-readable so that Cobalt can access your project information."
+                     ."<br /><br />You can correct this error by changing the properties of the metadata directory to be readable."
+                     ."<br />In Linux/Unix, the command would be: chmod 0777 $path";
+                displayErrors($msg);
+            }
+            elseif(substr($err_str,0,43) == 'Cobalt "metadata" directory is not writable')
+            {
+                $path = substr($err_str, 45);
+                $path = substr($path, 0, strlen($path)-2);
+                $msg ="$err_str
+                       <br />This directory needs to be world-writable so that Cobalt can store your project information."
+                     ."<br /><br />You can correct this error by changing the properties of the metadata directory to be writable."
+                     ."<br />In Linux/Unix, the command would be: chmod 0777 $path";
                 displayErrors($msg);
             }
             else
