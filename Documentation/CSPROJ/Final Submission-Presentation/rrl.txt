@@ -1,0 +1,35 @@
+To help develop the system, the team have to think of ways on how to gather ideas on how to make a consistent and updated pre-registration system by gathering information from other school’s systems. The team decided to search for schools who are known for their excellency in education and started gathering procedures on how their current system works. After knowing the procedures on how these systems work, the team decided to compare the similarities of the chosen schools to their proposed system for a clear understanding so that the system will have a better function and user experience. With these information gathered, the team acquired more knowledge on how a proper system should run. Nowadays, schools are automating processes in their current systems and having an online system is a must. The adaptation of these related systems have been a big help to the team, it gave them the thought of how important and how beneficial it would be for the school. Hence, the project’s goal is to provide convenience for the APC Community and help the school to have a better and hassle-free experience of pre-registering. The team believes that having these ideas gathered together, will help develop a well-functioning and user-friendly online pre-registration system.
+
+2.1	Ateneo Integrated Student Information System (AISIS)
+
+	The Ateneo Integrated Student Information System (AISIS Online) is the portal for Ateneo students, faculty, and staff. Through the AISIS Online, officially enrolled Ateneo students may view pertinent school information including their IPS, grades, class schedules and the like. Students may also eventually enlist using AISIS Online. Ateneo faculty and staff with access to AISIS, on the other hand, may submit grades and access their class schedules from outside the campus.
+
+	
+Similarities:
+-Pre-registration/Online enlistment period
+-Modification of subjects online
+-Displaying tuition assessment form (registration form)
+-Rules (Prerequisites and advising)
+Our project is similar in a sense that our system would like to use the web to provide the user information concerning his/her subjects that be modified on a certain registration period. AISIS Online provides an Online Enlistment service that would give the students the convenience of modifying their subjects online. One of our project’s objectives is to provide convenience and satisfy the students, advisers, and APC Community. With this related literature, we can adopt or implement ideas that we have reviewed in the system and implement it to our proposed system. (Retrieved on August 19, 2016 from http://aisisonline.ateneo.edu/index.php)
+2.2	De La Salle University Animo.sys Portal
+
+	De La Salle University has an online enrollment system which is Animo.sys portal that students can access for encoding the courses they want to take for the next term. Enrollment schedules are posted for students to know when to enroll. All students must have an activated My.LaSalle account to access the enrollment system open from 8 am until 8 pm from Mondays to Fridays in http://my.dlsu.edu.ph/. They must arrange all clearances first before or during the enrollment schedule. Students may have academic advising from the Graduate Program Coordinator of each course who is discussing about the subjects that students want to add. Then, students can check the course codes of the subjects they want to take. Schedules are given for students on when to enroll online. After enrolling, they may claim the Enrollment Assessment Form (EAF) which contains all the subjects they have encoded.
+
+	Similarities of APC Online Pre-registration System and DLSU’s Animo.sys Portal
+-Both systems provide course codes 
+-Academic advising for students 
+-First come first serve (adaptation of time stamp)
+-Displaying EAF or Enrollment Assessment Form (Registration Form)
+The features that Animo.sys Portal has some similar features to our proposed system. Both systems provide course codes for students to know what subjects they want to add. Another is that both have academic advising for students to be notified whether they can take the subject or not due to different cases like failed pre-requisites, unfinished clearances and unpaid tuition fees. By having a background of how Animo.sys Portal works, it will be a great basis for creating our proposed project which is Asia Pacific College Online Pre-Registration System. (Retrieved on August 19, 2016 from https://my.dlsu.edu.ph/faq/, http://www.dlsu.edu.ph/offices/registrar/enrollment.asp)
+
+
+2.3	University of the Philippines Computerized Registration System (UP CRS)
+
+	The Electrical and Electronics Engineering Institute in the University of the Philippines made an explanation about how the University of the Philippines’ Computerized Registration System (UP CRS) works. Students usually go through advanced enlistment during general registration. They also have advanced enlistment in the middle of the period. During advanced enlistment, students would submit a list of their desired subjects to their respective colleges. These lists are submitted online through the UP CRS. The UP CRS then processes these lists according to the student’s enrollment status. The results are to be printed as the UP Form 5-A. During the registration period, the subjects can be added or dropped from the Form 5-A due to different reasons. Then the different colleges would allocate new slots to those subjects that have been dropped by the students. These slots can be viewed in the UP CRS.
+
+Similiarities:
+-Option to add, drop, and request for petition of subjects online.
+-Display available slots to all subjects offered.
+-Class prioritization (Restrictions on some classes due to legitimate reasons)
+- Available Slot and Total Slots fields are always updated real time
+	The UP CRS has the flexibility we would like our Pre-registration to have. The UP CRS has an option to add, drop and petition subjects online. The UP CRS can also show available slots to all subjects offered just like what APC has which is the Masters List. The UP CRS would be a great basis on what functionalities our Pre-registration system would have. (Retrieved on August 19, 2016 from http://www.eee.upd.edu.ph/academic-programs/enlistment/computerized-registration-system)
