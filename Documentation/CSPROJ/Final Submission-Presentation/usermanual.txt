@@ -1,4 +1,4 @@
-Upon the first enrollment of a student, the ITRO generates a FLAVIO account used for accessing both the main FLAVIO system and the Online Inquiry. Professors also have the existeing Flavio accounts. Threfore,
+ Upon the first enrollment of a student, the ITRO generates a FLAVIO account used for accessing both the main FLAVIO system and the Online Inquiry. Professors also have the existeing Flavio accounts. Threfore,
 there is no registration feature  for the online pre-registration system.
 
 * Allowed Users
